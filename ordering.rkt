@@ -26,11 +26,7 @@
   [raw-variable? (-> any/c boolean?)]
   [struct variable+ordering ((name string?) (order ordering?))]
   [variable? (-> any/c boolean?)]
-  [variable-name (-> variable? string?)]
-
-  [lexicographic independent-ordering?]
-  [lexicographic-ci independent-ordering?]
-  [mean-of (-> raw-variable? dependent-ordering?)]))
+  [variable-name (-> variable? string?)]))
 
 (struct ordering (func))
 (struct independent-ordering ordering ())
