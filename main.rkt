@@ -14,6 +14,7 @@
                   (λ binding ...
                     body ...)
                   ...))]))
+
 ; entry-point
 (define gss-sm (df-read/csv "data/gss_sm.csv"))
 ; group by bigregion and religion, make a new column total that is
