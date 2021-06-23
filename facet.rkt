@@ -5,24 +5,10 @@
          racket/list
          racket/set
          racket/vector
-         threading)
+         "helpers.rkt")
 (provide
  (contract-out [facet (->* (data-frame?) #:rest (non-empty-listof string?) (listof data-frame?))]
                [unfacet (->* () #:rest (non-empty-listof data-frame?) data-frame?)]))
-
-; removes duplicates from a given vector
-(define (vector-remove-duplicates vec)
-  (define seen (mutable-set))
-  (for/vector ([v (in-vector vec)]
-               #:unless (set-member? seen v))
-    (set-add! seen v)
-    v))
-
-; determines the possible values that a given data-frame has in a column
-(define (possibilities data group)
-  (~> (df-select data group)
-      vector-remove-duplicates
-      (vector-filter (λ (x) (and x #t)) _)))
 
 ; defines the `facet` operation, which constructs multiple data-frames from
 ; an existing data-frame.
@@ -47,9 +33,9 @@
 
 ; faceting, but it can do multiple groups.
 (define (facet df . groups)
-  (for/fold ([dfs (list df)] #:result (flatten dfs))
+  (for/fold ([dfs (list df)])
             ([grp (in-list groups)])
-    (map (facet-once _ grp) dfs)))
+    (flatten (map (facet-once _ grp) dfs))))
 
 ; shared series between data-frames
 (define (shared-series dfs)
