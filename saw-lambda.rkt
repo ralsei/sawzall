@@ -7,10 +7,10 @@
 
 (define-syntax (saw-λ stx)
   (syntax-parse stx
-    [(_ [col binding body ...] ...)
+    [(_ [col:id (bound:id ...) body:expr ...] ...)
      #'(saw-proc (list (symbol->string (quote col)) ...)
-                 (list (map symbol->string (quote binding)) ...)
+                 (list (map symbol->string (list (quote bound) ...)) ...)
                  (list
-                  (λ binding ...
+                  (λ (bound ...)
                     body ...)
                   ...))]))

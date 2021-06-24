@@ -1,6 +1,7 @@
 #lang racket/base
 (require data-frame
          "aggregate.rkt"
+         "create.rkt"
          "saw-lambda.rkt")
 
 ; entry-point
@@ -17,7 +18,7 @@
     v))
 ;; ; make a new column that is the frequency of each religion's occurrence,
 ;; ; then convert it to pct%
-;; (define with-frequency
-;;   (create aggregated
-;;           (saw-λ [frequency (total) (/ total n-observations)] ; argument is a value here, mapped
-;;                  [percent (frequency) (round (* frequency 100))])))
+(define with-frequency
+  (create aggregated
+          (saw-λ [frequency (total) (/ total n-observations)] ; argument is a value here, mapped
+                 [percent (frequency) (round (* frequency 100))])))
