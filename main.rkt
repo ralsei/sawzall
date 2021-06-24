@@ -1,5 +1,6 @@
 #lang racket/base
 (require data-frame
+         plot/utils
          threading
          "aggregate.rkt"
          "create.rkt"
@@ -30,7 +31,7 @@
 ; then combine them back together
 (define with-frequency (apply unfacet with-frequencies))
 ; and let 'er rip
-; (show with-frequency)
+(show with-frequency)
 
 ; alternatively
 (~> gss-sm
@@ -38,8 +39,18 @@
                (saw-λ [total (religion) (vector-length religion)]))
     (facet "bigregion")
     (map (λ (df)
-           (create df (saw-λ [frequency (total) (/ total (sum (df-select df "total")))]
-                             [percent (frequency) (round (* frequency 100))])))
+           (~> df
+               (create-all (saw-λ [frequency (total) (v/ total (sum total))]))
+               (create (saw-λ [percent (frequency) (round (* frequency 100))]))))
          _)
     (apply unfacet _)
     show)
+
+; alternatively alternatively??
+;; (~> gss-sm
+;;     (group-with "bigregion" "religion") ; this turns into a data-frame + grouping info
+;;     (aggregate (saw-λ [total (religion) (vector-length religion)]))
+;;     (create-all (saw-λ [frequency (total) (v/ total (sum total))]))
+;;     (create (saw-λ [percent (frequency) (round (* frequency 100))]))
+;;     ungroup ; turns back into a data-frame
+;;     show)
