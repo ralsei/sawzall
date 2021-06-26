@@ -2,17 +2,20 @@
 (require data-frame
          fancy-app
          racket/contract/base
-         racket/function
          racket/match
-         "facet.rkt"
+         "grouping.rkt"
          "saw-lambda.rkt")
 (provide
- (contract-out [aggregate (-> data-frame? (non-empty-listof string?) saw-proc? data-frame?)]))
+ (contract-out [aggregate (-> (or/c data-frame? grouped-data-frame?)
+                              saw-proc?
+                              (or/c data-frame? grouped-data-frame?))]))
 
 ; summarizes a given data-frame into the given result by the saw-lambda, after splitting by group
-(define (aggregate df groups proc)
-  (apply unfacet (map (aggregate-already-split _ groups proc)
-                      (apply (curry facet df) groups))))
+(define (aggregate df proc)
+  (define res
+    (for/list ([v (in-list (get-frames df))])
+      (aggregate-already-split v (get-groups df) proc)))
+  (return-with-list df res #:peel? #t))
 
 ; after already having split the data-frame up, aggregate the results
 ; assumes that the columns in `retain` only have one value

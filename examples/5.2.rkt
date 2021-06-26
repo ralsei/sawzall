@@ -16,13 +16,12 @@
 ;;            pct = round((freq*100), 0))
 (define rel-by-region
   (~> gss-sm
-      (aggregate '("bigregion" "religion")
-                 (saw-λ [N (religion) (vector-length religion)]))
-      (facet "bigregion")
-      (map (lambda~> (create-all (saw-λ [freq (N) (v/ N (sum N))]))
-                     (create (saw-λ [pct (freq) (round (* freq 100))])))
-           _)
-      (apply unfacet _)))
+      (group-with "bigregion" "religion")
+      (aggregate (saw-λ [N (religion) (vector-length religion)]))
+      introspect
+      (create-all (saw-λ [freq (N) (v/ N (sum N))]))
+      (create (saw-λ [pct (freq) (round (* freq 100))]))
+      ungroup))
 
 ;; p <- ggplot(rel_by_region, aes(x = religion, y = pct, fill = religion))
 ;; p + geom_col(position = "dodge2") +
