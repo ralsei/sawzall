@@ -18,7 +18,6 @@
   (~> gss-sm
       (group-with "bigregion" "religion")
       (aggregate (saw-λ [N (religion) (vector-length religion)]))
-      introspect
       (create-all (saw-λ [freq (N) (v/ N (sum N))]))
       (create (saw-λ [pct (freq) (round (* freq 100))]))
       ungroup))
@@ -32,6 +31,7 @@
 (graph #:data rel-by-region
        #:mapping (aes #:x "religion" #:y "pct" #:facet "bigregion")
        #:facet-wrap 2
+       #:title "Religious preferences by region"
        #:x-label "Religion" #:y-label "Percent"
        #:height 800
        #:width 800

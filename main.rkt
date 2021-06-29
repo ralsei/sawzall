@@ -2,12 +2,14 @@
 (require "aggregate.rkt"
          "create.rkt"
          "display.rkt"
+         "for-forms.rkt"
          "grouping.rkt"
-         "facet.rkt"
-         "saw-lambda.rkt")
-(provide facet unfacet
+         "saw-lambda.rkt"
+         "split.rkt")
+(provide split-with combine
          group-with ungroup
          aggregate
          create create-all
          show introspect
-         saw-λ saw-proc?)
+         saw-λ saw-proc?
+         for/data-frame for*/data-frame)

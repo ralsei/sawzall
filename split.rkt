@@ -2,19 +2,18 @@
 (require data-frame
          fancy-app
          racket/contract/base
-         racket/list
          racket/set
          racket/vector
          "helpers.rkt")
 (provide
- (contract-out [facet (->* (data-frame?) #:rest (non-empty-listof string?) (listof data-frame?))]
-               [unfacet (->* () #:rest (non-empty-listof data-frame?) data-frame?)]))
+ (contract-out [split-with (-> data-frame? string? (listof data-frame?))]
+               [combine (->* () #:rest (non-empty-listof data-frame?) data-frame?)]))
 
-; defines the `facet` operation, which constructs multiple data-frames from
+; defines the split operation, which constructs multiple data-frames from
 ; an existing data-frame.
 ; does NOT produce another data-frame, instead producing a list of data-frames
 ; split into unique groups.
-(define (facet-once df group)
+(define (split-with df group)
   (define (df-with possibility)
     (define return-df (make-data-frame))
     ; TODO: data-frame uses bsearch for this
@@ -31,24 +30,18 @@
     return-df)
   (vector->list (vector-map df-with (possibilities df group))))
 
-; faceting, but it can do multiple groups.
-(define (facet df . groups)
-  (for/fold ([dfs (list df)])
-            ([grp (in-list groups)])
-    (flatten (map (facet-once _ grp) dfs))))
-
 ; shared series between data-frames
 (define (shared-series dfs)
   (apply set-intersect (map (compose list->set df-series-names) dfs)))
 
 ; binding a faceted list of data-frames into a singular data-frame
 ; assumption: the data-frames have at least one common column
-(define (unfacet . dfs)
+(define (combine . dfs)
   (cond [(= (length dfs) 1) (car dfs)]
         [else
          (define series-names (shared-series dfs))
          (when (set-empty? series-names)
-           (error 'unfacet "no common columns in data-frames"))
+           (error 'combine "no common columns in data-frames"))
          (define return-df (make-data-frame))
          (define new-series
            (for/list ([col (in-set series-names)])

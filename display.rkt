@@ -4,15 +4,17 @@
          "grouping.rkt")
 (provide show introspect)
 
-; this should probably be more sophisticated. but it's fine for now
 (define (show df)
-  (printf "groups: ~a" (get-groups df))
-  (for ([f (in-list (get-frames df))])
-    (print-table
-     (let ([series (df-series-names f)])
-       (cons series
-             (for/list ([v (apply in-data-frame/list f series)])
-               v))))))
+  (void (group-map show-internal df #:pass-groups? #t)))
+
+(define (show-internal df grps)
+  (when (not (null? grps))
+    (printf "groups: ~a~n" grps))
+  (print-table
+   (let ([series (df-series-names df)])
+     (cons series
+           (for/list ([v (apply in-data-frame/list df series)])
+             v)))))
 
 (define (introspect df)
   (show df) df)
