@@ -17,9 +17,9 @@
 (define rel-by-region
   (~> gss-sm
       (group-with "bigregion" "religion")
-      (aggregate (saw-λ [N (religion) (vector-length religion)]))
-      (create-all (saw-λ [freq (N) (v/ N (sum N))]))
-      (create (saw-λ [pct (freq) (round (* freq 100))]))
+      (aggregate [N (religion) (vector-length religion)])
+      (create-all [freq (N) (v/ N (sum N))])
+      (create [pct (freq) (round (* freq 100))])
       ungroup))
 
 ;; p <- ggplot(rel_by_region, aes(x = religion, y = pct, fill = religion))

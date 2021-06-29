@@ -1,23 +1,25 @@
 #lang racket/base
-(require data-frame
+(require (for-syntax racket/base)
+         data-frame
          fancy-app
-         racket/contract/base
+         racket/contract
          racket/match
          racket/vector
          "grouping.rkt"
-         "saw-lambda.rkt")
-(provide
- (contract-out [aggregate (-> (or/c data-frame? grouped-data-frame?)
-                              saw-proc?
-                              (or/c data-frame? grouped-data-frame?))]))
+         "syntax.rkt")
+(provide aggregate)
+
+(define-syntax (aggregate stx)
+  (column-syntax-form stx #'aggregate/int))
 
 ; summarizes a given data-frame into the given result by the saw-lambda, after splitting by group
-(define (aggregate df proc)
+(define/contract (aggregate/int df proc)
+  (-> (or/c data-frame? grouped-data-frame?) column-proc? (or/c data-frame? grouped-data-frame?))
   (ungroup (group-map (aggregate-already-split _ _ proc) df #:pass-groups? #t)))
 
 ; after already having split the data-frame up, aggregate the results
 (define (aggregate-already-split df retain proc)
-  (match-define (saw-proc new-cols binders procs) proc)
+  (match-define (column-proc new-cols binders procs) proc)
 
   (define return-df (make-data-frame))
   (define retain-series

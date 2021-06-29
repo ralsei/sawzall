@@ -1,25 +1,24 @@
 #lang racket/base
-(require data-frame
+(require (for-syntax racket/base)
+         data-frame
          fancy-app
-         racket/contract/base
+         racket/contract
          racket/function
          racket/match
          racket/vector
          "grouping.rkt"
-         "saw-lambda.rkt")
-(provide
- (contract-out [create (-> (or/c data-frame? grouped-data-frame?)
-                           saw-proc?
-                           (or/c data-frame? grouped-data-frame?))]
-               [create-all (-> (or/c data-frame? grouped-data-frame?)
-                               saw-proc?
-                               (or/c data-frame? grouped-data-frame?))]))
+         "syntax.rkt")
+(provide create create-all)
 
-(define (create df proc)
-  (group-map (create-internal _ proc) df))
+(define-syntax (create stx)
+  (column-syntax-form stx #'create/int))
 
-(define (create-internal df proc)
-  (match-define (saw-proc new-cols binders procs) proc)
+(define/contract (create/int df proc)
+  (-> (or/c data-frame? grouped-data-frame?) column-proc? (or/c data-frame? grouped-data-frame?))
+  (group-map (create-on-df _ proc) df))
+
+(define (create-on-df df proc)
+  (match-define (column-proc new-cols binders procs) proc)
   (define return-df (df-shallow-copy df)) ; UNDOCUMENTED
 
   ; we have to support sequential saw-λ
@@ -32,11 +31,14 @@
                                          (map (df-select return-df _) binder)))))
   return-df)
 
-(define (create-all df proc)
-  (group-map (create-all-internal _ proc) df))
+(define-syntax (create-all stx)
+  (column-syntax-form stx #'create-all/int))
 
-(define (create-all-internal df proc)
-  (match-define (saw-proc new-cols binders procs) proc)
+(define (create-all/int df proc)
+  (group-map (create-all-on-df _ proc) df))
+
+(define (create-all-on-df df proc)
+  (match-define (column-proc new-cols binders procs) proc)
   (define return-df (df-shallow-copy df))
 
   (for ([col-name (in-list new-cols)]
