@@ -18,9 +18,10 @@
   (~> gss-sm
       (group-with "bigregion" "religion")
       (aggregate [N (religion) (vector-length religion)])
-      (create-all [freq (N) (v/ N (sum N))])
-      (create [pct (freq) (round (* freq 100))])
-      ungroup))
+      (create [freq ([N : vector]) (v/ N (sum N))]
+              [pct ([freq : element]) (round (* freq 100))])
+      ungroup
+      introspect))
 
 ;; p <- ggplot(rel_by_region, aes(x = religion, y = pct, fill = religion))
 ;; p + geom_col(position = "dodge2") +

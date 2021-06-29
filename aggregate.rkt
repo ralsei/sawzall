@@ -10,7 +10,7 @@
 (provide aggregate)
 
 (define-syntax (aggregate stx)
-  (column-syntax-form stx #'aggregate/int))
+  (column-syntax-form stx #'aggregate/int #f))
 
 ; summarizes a given data-frame into the given result by the saw-lambda, after splitting by group
 (define/contract (aggregate/int df proc)
@@ -31,7 +31,8 @@
                [binder (in-list binders)]
                [to-apply (in-list procs)])
       (make-series new-col #:data (vector
-                                   (apply to-apply (map (df-select df _) binder))))))
+                                   (apply to-apply (map (compose (df-select df _) car)
+                                                        binder))))))
 
   (for ([s (in-list (append retain-series new-series))])
     (df-add-series! return-df s))
