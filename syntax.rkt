@@ -2,7 +2,9 @@
 (require (for-syntax racket/base)
          syntax/parse/define)
 (provide (struct-out column-proc)
-         (for-syntax column-syntax-form))
+         (struct-out row-proc)
+         (for-syntax column-syntax-form
+                     row-syntax-form))
 
 (struct column-proc (columns bindings procs) #:transparent)
 
@@ -31,3 +33,14 @@
                                        (list (λ (bound ...)
                                                body ...)
                                              ...)))]))
+
+(struct row-proc (bindings proc))
+
+(define-for-syntax (row-syntax-form stx internal-function-stx)
+  (syntax-parse stx
+    [(_ frame:expr (bound:id ...) body:expr ...)
+     #:with internal-function internal-function-stx
+     #'(internal-function frame
+                          (row-proc (list (symbol->string 'bound) ...)
+                                    (λ (bound ...)
+                                      body ...)))]))
