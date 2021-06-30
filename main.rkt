@@ -4,6 +4,7 @@
          "display.rkt"
          "for-forms.rkt"
          "grouping.rkt"
+         "reorder.rkt"
          "split.rkt"
          "where.rkt")
 (provide split-with combine
@@ -11,5 +12,6 @@
          aggregate
          create
          where
+         reorder
          show introspect
          for/data-frame for*/data-frame)
