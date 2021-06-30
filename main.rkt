@@ -12,6 +12,6 @@
          aggregate
          create
          where
-         reorder
+         reorder by-vector
          show introspect
          for/data-frame for*/data-frame)

@@ -7,7 +7,8 @@
          racket/vector
          "grouping.rkt"
          "syntax.rkt")
-(provide reorder)
+(provide (contract-out [by-vector (-> vector? (-> any/c any/c boolean?))])
+         reorder)
 
 ; reorders a vector based on the given indices
 ; example:
@@ -45,3 +46,10 @@
     (df-add-series! return-df
                     (make-series col #:data (vector-reorder (df-select df col) indices))))
   return-df)
+
+(define (by-vector vec)
+  (define hsh
+    (for/hash ([(v idx) (in-indexed (in-vector vec))])
+      (values v idx)))
+  (λ (a b)
+    (< (hash-ref hsh a) (hash-ref hsh b))))
