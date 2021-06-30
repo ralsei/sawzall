@@ -13,7 +13,9 @@
                                 #:rest (non-empty-listof string?)
                                 grouped-data-frame?)]
                [ungroup (-> (or/c data-frame? grouped-data-frame?)
-                            (or/c data-frame? grouped-data-frame?))])
+                            (or/c data-frame? grouped-data-frame?))]
+               [ungroup-all (-> (or/c data-frame? grouped-data-frame?)
+                                (or/c data-frame? grouped-data-frame?))])
  listof-data-frames? ->grouped-data-frame group-map)
 
 (struct grouped-data-frame (groups frames) #:transparent)
@@ -52,6 +54,15 @@
          (cond [(listof-data-frames? dfs)
                 (apply combine dfs)]
                [else (grouped-data-frame grp (map ungroup dfs))])]))
+
+(define (fix f xs)
+  (let ([next (f xs)])
+    (if (equal? next xs)
+        xs
+        (fix f next))))
+
+(define (ungroup-all grouped-df)
+  (fix ungroup grouped-df))
 
 ; meh, no real need to check all of it -- lists are probably homogenous unless something
 ; goes horribly wrong

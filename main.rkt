@@ -7,7 +7,7 @@
          "split.rkt"
          "where.rkt")
 (provide split-with combine
-         group-with ungroup
+         group-with ungroup ungroup-all
          aggregate
          create
          where
