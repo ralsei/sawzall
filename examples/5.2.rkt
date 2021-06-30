@@ -19,7 +19,7 @@
       (group-with "bigregion" "religion")
       (aggregate [N (religion) (vector-length religion)])
       (create [freq ([N : vector]) (v/ N (sum N))]
-              [pct ([freq : element]) (round (* freq 100))])
+              [pct (freq) (round (* freq 100))])
       ungroup))
 
 ;; p <- ggplot(rel_by_region, aes(x = religion, y = pct, fill = religion))

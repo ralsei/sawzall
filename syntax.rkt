@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     racket/list)
          syntax/parse/define)
 (provide (struct-out column-proc)
          (struct-out row-proc)
@@ -8,31 +9,28 @@
 
 (struct column-proc (columns bindings procs) #:transparent)
 
+(begin-for-syntax
+  (define-syntax-class binder
+    #:attributes (var ty)
+    [pattern var:id #:attr ty (syntax #f)]
+    [pattern [var:id {~literal :} ty:id]]))
+
 (define-for-syntax (column-syntax-form stx internal-function-stx faux-types?)
   (syntax-parse stx
-    [(_ frame:expr [col:id ([bound:id (~literal :) ty:id] ...) body:expr ...] ...)
+    [(_ frame:expr [col:id (binding:binder ...) body:expr ...] ...)
      #:with internal-function internal-function-stx
-     (when (not faux-types?)
+     (when (and (not faux-types?)
+                (andmap (λ (x) (and (syntax->datum x) #t)) (flatten (attribute binding.ty))))
        (raise-syntax-error (syntax->datum (attribute internal-function))
                            "types should not be specified here"))
-     #'(internal-function frame
-                          (column-proc (list (symbol->string 'col) ...)
-                                       (list (list (cons (symbol->string 'bound)
-                                                         'ty)) ...
-                                             ...)
-                                       (list (λ (bound ...)
-                                               body ...)
-                                             ...)))]
-    [(_ frame:expr [col:id (bound:id ...) body:expr ...] ...)
-     #:with internal-function internal-function-stx
-     #'(internal-function frame
-                          (column-proc (list (symbol->string 'col) ...)
-                                       (list (list (cons (symbol->string 'bound)
-                                                         #f) ...)
-                                             ...)
-                                       (list (λ (bound ...)
-                                               body ...)
-                                             ...)))]))
+     #'(internal-function
+        frame
+        (column-proc (list (symbol->string 'col) ...)
+                     (list (list (cons (symbol->string 'binding.var)
+                                       'binding.ty) ...) ...)
+                     (list (λ (binding.var ...)
+                             body ...)
+                           ...)))]))
 
 (struct row-proc (bindings proc))
 
@@ -40,7 +38,8 @@
   (syntax-parse stx
     [(_ frame:expr (bound:id ...) body:expr ...)
      #:with internal-function internal-function-stx
-     #'(internal-function frame
-                          (row-proc (list (symbol->string 'bound) ...)
-                                    (λ (bound ...)
-                                      body ...)))]))
+     #'(internal-function
+        frame
+        (row-proc (list (symbol->string 'bound) ...)
+                  (λ (bound ...)
+                    body ...)))]))
