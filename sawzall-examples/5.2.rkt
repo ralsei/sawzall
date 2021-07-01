@@ -3,7 +3,7 @@
          graphite
          threading
          racket/vector
-         "../main.rkt") ; sawzall
+         sawzall)
 
 (define (v/ vec c) (vector-map (λ (v) (/ v c)) vec))
 (define (sum vec) (for/sum ([v (in-vector vec)] #:when (number? v)) v))

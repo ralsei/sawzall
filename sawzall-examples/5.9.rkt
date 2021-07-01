@@ -1,13 +1,12 @@
 #lang racket
-(require data-frame math/statistics graphite threading "../main.rkt")
+(require data-frame math/statistics graphite threading sawzall)
 
 (define organdata (df-read/csv "data/organdata.csv" #:na "NA"))
 (define sorted-countries
   (~> organdata
       (group-with "country")
-      (aggregate [mean (donors) (mean (vector-filter identity donors))])
-      ungroup
-      (reorder [mean <])
+      (aggregate [med (donors) (median < (vector-filter identity donors))])
+      (reorder [med <])
       (df-select "country")))
 (define sorted
   (~> organdata
