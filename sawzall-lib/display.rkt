@@ -2,17 +2,23 @@
 (require data-frame
          fancy-app
          text-table
+         racket/contract/base
          racket/list
          "grouping.rkt")
-(provide show introspect)
+(provide (contract-out [show (->* ((or/c data-frame? grouped-data-frame?))
+                                  (#:all? boolean?)
+                                  void?)]
+                       [introspect (->* ((or/c data-frame? grouped-data-frame?))
+                                        (#:all? boolean?)
+                                        (or/c data-frame? grouped-data-frame?))]))
 
 (define *show-rows-default* 6)
 (define *show-cols-default* 6)
 
 (define (show df #:all? [all? #f])
-  (void (group-map (show-internal _ _ all?) df #:pass-groups? #t)))
+  (void (ignore-grouping (show-internal all?) df #:pass-groups? #t #:regroup? #f)))
 
-(define (show-internal df grps all?)
+(define ((show-internal all?) df grps)
   (define all-series (df-series-names df))
   (define n-rows (df-row-count df))
   (define n-cols (length all-series))
@@ -24,10 +30,10 @@
     (printf "groups: ~a~n" grps))
 
   (print-table
-   (let ([series (take all-series col-cap)])
+   (let ([series (if all? all-series (take all-series col-cap))])
      (cons series
            (for/list ([v (apply in-data-frame/list df series)]
-                      [_ row-cap])
+                      [_ (if all? n-rows row-cap)])
              v))))
 
   (when (not all?)
@@ -35,5 +41,5 @@
             (- n-rows row-cap)
             (- n-cols col-cap))))
 
-(define (introspect df)
-  (show df) df)
+(define (introspect df #:all? [all? #f])
+  (show df #:all? all?) df)

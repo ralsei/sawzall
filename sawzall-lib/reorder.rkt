@@ -25,7 +25,7 @@
 
 (define/contract (reorder/int df proc)
   (-> (or/c data-frame? grouped-data-frame?) sort-proc? (or/c data-frame? grouped-data-frame?))
-  (group-map (reorder-df _ proc) df))
+  (ignore-grouping (reorder-df _ proc) df))
 
 (define (reorder-df df proc)
   (match-define (sort-proc cols comparators) proc)

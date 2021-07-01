@@ -16,7 +16,8 @@
                             (or/c data-frame? grouped-data-frame?))]
                [ungroup-all (-> (or/c data-frame? grouped-data-frame?)
                                 (or/c data-frame? grouped-data-frame?))])
- listof-data-frames? ->grouped-data-frame group-map)
+ listof-data-frames? ->grouped-data-frame
+ group-map ignore-grouping)
 
 (struct grouped-data-frame (groups frames) #:transparent)
 
@@ -35,6 +36,21 @@
                (appl d acc)
                (appl d))]))
   (iter df null))
+
+(define (ignore-grouping appl df #:pass-groups? [pass-groups? #f] #:regroup? [regroup? #t])
+  (define (all-groups gdf)
+    (cond [(data-frame? gdf) (list)]
+          [(grouped-data-frame? gdf)
+           (match-define (grouped-data-frame grps dfs) gdf)
+           (if (listof-data-frames? dfs)
+               grps
+               ; all the same, so just take the first
+               (all-groups (first dfs)))]))
+  ; strip grouping, apply, then regroup
+  (define grps (all-groups df))
+  (define merged-df (ungroup-all df))
+  (define res (if pass-groups? (appl merged-df grps) (appl merged-df)))
+  (if regroup? (apply group-with res grps) res))
 
 (define (group-with df . groups)
   (define (iter d grps acc)
