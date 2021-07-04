@@ -2,16 +2,17 @@
 (require "aggregate.rkt"
          "create.rkt"
          "display.rkt"
-         "for-forms.rkt"
          "grouping.rkt"
+         "rename.rkt"
          "reorder.rkt"
          "split.rkt"
          "where.rkt")
 (provide split-with combine
+         grouped-data-frame?
          group-with ungroup ungroup-all
          aggregate
          create
          where
          reorder by-vector
-         show introspect
-         for/data-frame for*/data-frame)
+         rename
+         show introspect)

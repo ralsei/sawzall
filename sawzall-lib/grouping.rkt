@@ -9,13 +9,13 @@
  (contract-out [struct grouped-data-frame ((groups (listof string?))
                                            (frames (non-empty-listof (or/c data-frame?
                                                                            grouped-data-frame?))))]
-               [group-with (->* ((or/c data-frame? grouped-data-frame?))
+               [group-with (->* (data-frame?)
                                 #:rest (non-empty-listof string?)
                                 grouped-data-frame?)]
                [ungroup (-> (or/c data-frame? grouped-data-frame?)
                             (or/c data-frame? grouped-data-frame?))]
                [ungroup-all (-> (or/c data-frame? grouped-data-frame?)
-                                (or/c data-frame? grouped-data-frame?))])
+                                data-frame?)])
  listof-data-frames? ->grouped-data-frame
  group-map ignore-grouping)
 

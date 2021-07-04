@@ -8,7 +8,7 @@
          "grouping.rkt"
          "syntax.rkt")
 (provide (contract-out [by-vector (-> vector? (-> any/c any/c boolean?))])
-         reorder)
+         reorder reorder/int)
 
 ; reorders a vector based on the given indices
 ; example:

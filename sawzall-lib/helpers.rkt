@@ -3,7 +3,7 @@
          racket/set
          racket/vector
          threading)
-(provide possibilities)
+(provide possibilities orderable? orderable<?)
 
 ; removes duplicates from a given vector
 (define (vector-remove-duplicates vec)
@@ -18,3 +18,41 @@
   (~> (df-select data group)
       vector-remove-duplicates
       (vector-filter (λ (x) (and x #t)) _)))
+
+; inferred generic comparator
+(define (orderable-major v)
+  (cond [(boolean? v)    0]
+        [(char? v)       1]
+        [(real? v)       2]
+        [(symbol? v)     3]
+        [(keyword? v)    4]
+        [(string? v)     5]
+        [(null? v)       6]
+        [(void? v)       7]
+        [(eof-object? v) 8]
+        [else #f]))
+
+(define (orderable? v) (and (orderable-major v) #t))
+
+(define (orderable<? a b)
+  (let ([am (orderable-major a)]
+        [bm (orderable-major b)])
+    (cond [(or (not am) (not bm)) #f]
+          [(= am bm)
+           (cond [(boolean? a) (not a)]
+                 [(char? a) (char<? a b)]
+                 [(real? a) (< a b)]
+                 [(symbol? a)
+                  (cond [(symbol-interned? a)
+                         (and (symbol-interned? b)
+                              (symbol<? a b))]
+                        [(symbol-interned? b) #t]
+                        [(symbol-unreadable? a)
+                         (and (symbol-unreadable? b)
+                              (symbol<? a b))]
+                        [(symbol-unreadable? b) #t]
+                        [else (symbol<? a b)])]
+                 [(keyword? a) (keyword<? a b)]
+                 [(string? a) (string<? a b)]
+                 [else (error 'orderable<? "cannot order: please specify a comparator")])]
+          [else (< am bm)])))
