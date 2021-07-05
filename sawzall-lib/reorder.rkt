@@ -30,11 +30,12 @@
 (define (reorder-df df proc)
   (match-define (sort-proc cols comparators) proc)
 
-  (for/fold ([df df])
+  (for/fold ([d df])
             ([col (in-list cols)]
              [cmp (in-list comparators)])
-    (reorder-once df col cmp)))
+    (reorder-once d col cmp)))
 
+; TODO: figure out df-set-sorted! here, for optimization's sake
 (define (reorder-once df col cmp?)
   (define return-df (make-data-frame))
   (define col-data (df-select df col))

@@ -228,7 +228,41 @@ grouped data frame, so you must use @racket[map] to do sequential groups or perf
 
 @section[#:tag "reorder"]{Sorting}
 
-@bold{Implemented, but undocumented.}
+@defform[(reorder df [column-name cmp?] ...)
+         #:contracts ([df (or/c data-frame? grouped-data-frame?)]
+                      [cmp? (-> any/c any/c boolean?)])]{
+  @bold{TODO:} maybe this shouldn't be a macro. I don't know why I made it a macro
+
+  Returns @racket[df], except with each column @racket[column-name] sorted sequentially with respect to
+  @racket[cmp?]. This operation retains, but ignores, grouping.
+
+  When doing sequential reorderings (multiple columns), this expands to multiple sorts, so the last column
+  specified is guaranteed to be sorted, but the first is not.
+
+  @racket[cmp?] is expected to handle "NA" values (passed as @racket[#f]).
+
+  @examples[#:eval ev
+    (~> example-df
+        (reorder [trt string-ci>?])
+        show)
+    (~> example-df
+        (reorder [trt string-ci>?]
+                 [adult >])
+        show)
+  ]
+}
+
+@defproc[(by-vector [vec vector?]) (-> any/c any/c boolean?)]{
+  Returns a comparator based on the positions in the given input vector @racket[vec].
+
+  This is useful for "replacing" a column in a frame, while retaining the order of observations.
+
+  @examples[#:eval ev
+    (~> example-df
+        (reorder [juv (by-vector (vector 50 20 30 10 40))])
+        show)
+  ]
+}
 
 @section[#:tag "reshaping"]{Reshaping}
 
