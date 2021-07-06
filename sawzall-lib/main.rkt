@@ -4,6 +4,7 @@
          "display.rkt"
          "grouping.rkt"
          "helpers.rkt"
+         "join.rkt"
          "rename.rkt"
          "reorder.rkt"
          "split.rkt"
