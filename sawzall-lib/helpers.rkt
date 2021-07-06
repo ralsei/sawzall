@@ -15,9 +15,9 @@
 
 ; determines the possible values that a given data-frame has in a column
 (define (possibilities data group)
-  (~> (df-select data group)
-      vector-remove-duplicates
-      (vector-filter (λ (x) (and x #t)) _)))
+  (~>> (df-select data group)
+       vector-remove-duplicates
+       (vector-filter (λ (x) (and x #t)))))
 
 ; inferred generic comparator
 (define (orderable-major v)
