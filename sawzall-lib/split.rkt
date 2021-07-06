@@ -32,7 +32,7 @@
 
 ; shared series between data-frames
 (define (shared-series dfs)
-  (apply set-intersect (map (compose list->set df-series-names) dfs)))
+  (apply set-intersect (map df-series-names dfs)))
 
 ; binding a faceted list of data-frames into a singular data-frame
 ; assumption: the data-frames have at least one common column

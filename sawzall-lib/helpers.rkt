@@ -1,9 +1,10 @@
 #lang racket/base
 (require data-frame
+         racket/list
          racket/set
          racket/vector
          threading)
-(provide possibilities orderable? orderable<?)
+(provide possibilities df-index-all orderable? orderable<?)
 
 ; removes duplicates from a given vector
 (define (vector-remove-duplicates vec)
@@ -18,6 +19,17 @@
   (~>> (df-select data group)
        vector-remove-duplicates
        (vector-filter (λ (x) (and x #t)))))
+
+; binary searches in a series for a given value,
+; then continues linear searching until we reach the end of it
+; assumption: the input series is already sorted
+(define (df-index-all df series value)
+  (define first-occurrence (df-index-of df series value))
+  (define last-occurrence
+    (for/first ([idx (in-range first-occurrence (df-row-count df))]
+                #:when (not (equal? (df-ref df idx series) value)))
+      idx))
+  (inclusive-range first-occurrence last-occurrence))
 
 ; inferred generic comparator
 (define (orderable-major v)

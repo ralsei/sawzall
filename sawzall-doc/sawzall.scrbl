@@ -77,7 +77,7 @@ it into a grouped one, in which operations are performed by group.
   @racket[var] sequentially, returning a grouped data frame.
 
   This does not change how the data-frame is displayed with @racket[show] or @racket[introspect], but
-  the result is internally different, and cannot be used with regualr data-frame operators like
+  the result is internally different, and cannot be used with regular data-frame operators like
   @racket[df-select].
 
   @examples[#:eval ev
@@ -224,6 +224,56 @@ grouped data frame, so you must use @racket[map] to do sequential groups or perf
 
 @section[#:tag "join"]{Joining}
 
+These operations join two tables in varying ways, along some common column (the "spine").
+
+All joining operations ignore grouping. The grouping of the first argument will be preserved,
+but grouping does not play a factor in how the operation performs (compared to a plain table).
+
+@subsection{Combining joins}
+
+These joins combine variables from the two input data-frames.
+
+@defproc[(left-join [df1 (or/c data-frame? grouped-data-frame?)]
+                    [df2 (or/c data-frame? grouped-data-frame?)]
+                    [by string?]
+                    [#:cmp? cmp? (-> any/c any/c boolean?) orderable<?])
+         (or/c data-frame? grouped-data-frame/?)]{
+  Returns a new data-frame, with all rows from @racket[df1], and all columns from @racket[df1]
+  and @racket[df2]. Rows are compared by the value of the variable @racket[by].
+
+  Rows in @racket[df1] that have no corresponding value of @racket[by] in @racket[df2] will have
+  NA values in the new columns.
+
+  Rows in @racket[df1] that have multiple corresponding values of @racket[by] in @racket[df2]
+  will have all combinations of the @racket[df1] and @racket[df2] values in the result.
+
+  @racket[cmp?] is used to sort the two data-frames before joining. By default, this is
+  @racket[orderable<?], which is in essence a "best guess" comparator.
+
+  No examples yet since it doesn't work.
+}
+
+@defproc[(right-join [df1 (or/c data-frame? grouped-data-frame?)]
+                     [df2 (or/c data-frame? grouped-data-frame?)]
+                     [by string?]
+                     [#:cmp? cmp? (-> any/c any/c boolean?) orderable<?])
+         (or/c data-frame? grouped-data-frame?)]{
+  Returns a new data-frame, with all rows from @racket[df2], and all colums from @racket[df1]
+  and @racket[df2]. Rows are compared by the value of @racket[by].
+
+  This is equivalent to @racket[(left-join df2 df1 by #:cmp? cmp?)].
+}
+
+@subsection{Filtering joins}
+
+These joins keep cases solely from the left-hand (first argument) data-frame.
+
+@bold{Unimplemented.}
+
+@subsection{Nesting join}
+
+This join creates a column in its result that is a list of other values.
+
 @bold{Unimplemented.}
 
 @section[#:tag "reorder"]{Sorting}
@@ -238,6 +288,9 @@ grouped data frame, so you must use @racket[map] to do sequential groups or perf
 
   When doing sequential reorderings (multiple columns), this expands to multiple sorts, so the last column
   specified is guaranteed to be sorted, but the first is not.
+
+  The last column specified is set as sorted with @racket[df-set-sorted!] if it does not contain any "NA"
+  values (usually @racket[#f]).
 
   @racket[cmp?] is expected to handle "NA" values (passed as @racket[#f]).
 

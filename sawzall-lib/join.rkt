@@ -53,6 +53,6 @@
 (df-add-series! df1 (make-series "site" #:data (vector "b" "a" "c")))
 (df-add-series! df1 (make-series "habitat" #:data (vector "grassland" "meadow" "woodland")))
 
-(df-add-series! df2 (make-series "site" #:data (vector "c" "b" "c" "b")))
-(df-add-series! df2 (make-series "day" #:data (vector 1 1 2 2)))
-(df-add-series! df2 (make-series "catch" #:data (vector 10 12 20 24)))
+(df-add-series! df2 (make-series "site" #:data (vector "c" "b")))
+(df-add-series! df2 (make-series "day" #:data (vector 1 2)))
+(df-add-series! df2 (make-series "catch" #:data (vector 10 12)))

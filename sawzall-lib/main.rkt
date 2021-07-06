@@ -3,6 +3,7 @@
          "create.rkt"
          "display.rkt"
          "grouping.rkt"
+         "helpers.rkt"
          "rename.rkt"
          "reorder.rkt"
          "split.rkt"
@@ -13,6 +14,7 @@
          aggregate
          create
          where
+         orderable? orderable<?
          reorder by-vector
          rename
          show introspect)
