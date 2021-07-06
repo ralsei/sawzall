@@ -17,5 +17,6 @@
          where
          orderable? orderable<?
          reorder by-vector
+         left-join right-join
          rename
          show introspect)

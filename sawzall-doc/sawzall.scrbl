@@ -250,7 +250,23 @@ These joins combine variables from the two input data-frames.
   @racket[cmp?] is used to sort the two data-frames before joining. By default, this is
   @racket[orderable<?], which is in essence a "best guess" comparator.
 
-  No examples yet since it doesn't work.
+  @examples[#:eval ev
+    (define woodland1
+      (for/data-frame (site habitat)
+                      ([site (in-list (list "b" "a" "c"))]
+                       [habitat (in-list (list "grassland"
+                                               "meadow"
+                                               "woodland"))])
+        (values site habitat)))
+    (define woodland2
+      (for/data-frame (site day catch)
+                      ([site (in-list (list "c" "b" "c" "b"))]
+                       [day (in-list (list 1 1 2 2))]
+                       [catch (in-list (list 10 12 20 24))])
+        (values site day catch)))
+    (show (left-join woodland1 woodland2 "site"))
+    (show (left-join woodland2 woodland1 "site"))
+  ]
 }
 
 @defproc[(right-join [df1 (or/c data-frame? grouped-data-frame?)]
