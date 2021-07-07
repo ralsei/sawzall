@@ -82,8 +82,8 @@
 ; - split-with should use binary search if the series is sorted
 (define ((combining-join on-df2-end on-lt on-else) df1 df2 by cmp?)
   ; sort and split, to make merge work. if we don't split, we can't handle duplicate keys
-  (define df1-sorted (reorder/int df1 (sort-proc (list by) (list cmp?))))
-  (define df2-sorted (reorder/int df2 (sort-proc (list by) (list cmp?))))
+  (define df1-sorted (reorder df1 (cons by cmp?)))
+  (define df2-sorted (reorder df2 (cons by cmp?)))
 
   (define df1-split (split-with-possibility df1-sorted by))
   (define df2-split (split-with-possibility df2-sorted by))

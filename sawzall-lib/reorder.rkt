@@ -3,37 +3,30 @@
          data-frame
          fancy-app
          racket/contract
-         racket/match
          racket/vector
-         "grouping.rkt"
-         "syntax.rkt")
-(provide (contract-out [by-vector (-> vector? (-> any/c any/c boolean?))])
-         reorder reorder/int)
+         "helpers.rkt"
+         "grouping.rkt")
+(provide (contract-out [by-vector (-> vector? (-> any/c any/c boolean?))]
+                       [reorder (->* ((or/c data-frame? grouped-data-frame?))
+                                     (#:in-groups? boolean?)
+                                     #:rest (non-empty-listof
+                                             (or/c string?
+                                                   (cons/c string? (-> any/c any/c boolean?))))
+                                     (or/c data-frame? grouped-data-frame?))]))
 
-; reorders a vector based on the given indices
-; example:
-;   (vector-reorder (vector 1 2 3) (vector 2 1 0))
-;   => (vector 3 2 1)
-(define (vector-reorder vec indices)
-  (when (not (= (vector-length indices) (vector-length vec)))
-    (error 'vector-reorder "index list not same length as vector"))
-  (for/vector ([idx (in-vector indices)])
-    (vector-ref vec idx)))
+(define (reorder df #:in-groups? [in-groups? #f] . to-sort)
+  (define pairs
+    (for/list ([v (in-list to-sort)])
+      (if (pair? v)
+          v
+          (cons v orderable<?))))
+  ((if in-groups? group-map ignore-grouping)
+   (reorder-df _ pairs) df))
 
-(define-syntax (reorder stx)
-  (sort-syntax-form stx #'reorder/int))
-
-(define/contract (reorder/int df proc)
-  (-> (or/c data-frame? grouped-data-frame?) sort-proc? (or/c data-frame? grouped-data-frame?))
-  (ignore-grouping (reorder-df _ proc) df))
-
-(define (reorder-df df proc)
-  (match-define (sort-proc cols comparators) proc)
-
+(define (reorder-df df pairs)
   (for/fold ([d df])
-            ([col (in-list cols)]
-             [cmp (in-list comparators)])
-    (reorder-once d col cmp)))
+            ([p (in-list pairs)])
+    (reorder-once d (car p) (cdr p))))
 
 ; TODO: figure out df-set-sorted! here, for optimization's sake
 (define (reorder-once df col cmp?)

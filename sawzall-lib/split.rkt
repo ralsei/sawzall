@@ -51,9 +51,7 @@
          (define return-df (make-data-frame))
          (define new-series
            (for/list ([col (in-set series-names)])
-             (make-series col #:data (for/fold ([v (vector)])
-                                               ([df (in-list dfs)])
-                                       (vector-append v (df-select df col))))))
+             (make-series col #:data (apply vector-append (map (df-select _ col) dfs)))))
          (for ([s (in-list new-series)])
            (df-add-series! return-df s))
          return-df]))

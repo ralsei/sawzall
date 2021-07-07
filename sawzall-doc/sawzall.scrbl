@@ -335,29 +335,20 @@ This join creates a column in its result that is a list of other values.
 
 @section[#:tag "reorder"]{Sorting}
 
-@defform[(reorder df [column-name cmp?] ...)
-         #:contracts ([df (or/c data-frame? grouped-data-frame?)]
-                      [cmp? (-> any/c any/c boolean?)])]{
-  @bold{TODO:} maybe this shouldn't be a macro. I don't know why I made it a macro
+@defproc[(reorder [df (or/c data-frame? grouped-data-frame?)]
+                  [column-spec (or/c string? (cons/c string? (-> any/c any/c boolean?)))]
+                  ...)
+         (or/c data-frame? grouped-data-frame?)]{
+  Returns @racket[df], except sorted by a series of columns. Each @racket[column-spec] is either a column
+  name, or a pair of a column name and a comparator.
 
-  Returns @racket[df], except with each column @racket[column-name] sorted sequentially with respect to
-  @racket[cmp?]. This operation retains, but ignores, grouping.
-
-  When doing sequential reorderings (multiple columns), this expands to multiple sorts, so the last column
-  specified is guaranteed to be sorted, but the first is not.
-
-  The last column specified is set as sorted with @racket[df-set-sorted!] if it does not contain any "NA"
-  values (usually @racket[#f]).
-
-  @racket[cmp?] is expected to handle "NA" values (passed as @racket[#f]).
+  If no comparator is specified, it defaults to @racket[orderable<?], which will cause an ascending sort
+  for most types of data.
 
   @examples[#:eval ev
     (~> example-df
-        (reorder [trt string-ci>?])
-        show)
-    (~> example-df
-        (reorder [trt string-ci>?]
-                 [adult >])
+        (reorder (cons "trt" string-ci>?)
+                 (cons "adult" >))
         show)
   ]
 }
@@ -369,9 +360,26 @@ This join creates a column in its result that is a list of other values.
 
   @examples[#:eval ev
     (~> example-df
-        (reorder [juv (by-vector (vector 50 20 30 10 40))])
+        (reorder (cons "juv" (by-vector (vector 50 20 30 10 40))))
         show)
   ]
+}
+
+@defproc[(orderable? [v any/c]) boolean?]{
+  Determines if the given type of value @racket[v] can be sorted against another @racket[orderable?]
+  by @racket[orderable<?].
+
+  @racket[v] must be one of @racket[boolean?], @racket[char?], @racket[real?], @racket[symbol?],
+  @racket[keyword?], @racket[string?], @racket[null?], @racket[void?], or @racket[eof-object?].
+
+  This does not guarantee that @racket[orderable<?] will succeed. For example, @racket[orderable<?] will
+  error if given two @racket[void?]s.
+}
+
+@defproc[(orderable<? [a orderable?] [b orderable?]) boolean?]{
+  A generic comparator to determine if @racket[a] is less than @racket[b].
+
+  Used by default by joins and @racket[reorder].
 }
 
 @section[#:tag "reshaping"]{Reshaping}

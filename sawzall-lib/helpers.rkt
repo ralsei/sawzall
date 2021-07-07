@@ -1,10 +1,12 @@
 #lang racket/base
 (require data-frame
+         racket/contract/base
          racket/list
          racket/set
          racket/vector
          threading)
-(provide possibilities df-index-all orderable? orderable<?)
+(provide possibilities df-index-all vector-reorder orderable?
+         (contract-out [orderable<? (-> orderable? orderable? boolean?)]))
 
 ; removes duplicates from a given vector
 (define (vector-remove-duplicates vec)
@@ -19,6 +21,16 @@
   (~>> (df-select data group)
        vector-remove-duplicates
        (vector-filter (λ (x) (and x #t)))))
+
+; reorders a vector based on the given indices
+; example:
+;   (vector-reorder (vector 1 2 3) (vector 2 1 0))
+;   => (vector 3 2 1)
+(define (vector-reorder vec indices)
+  (when (not (= (vector-length indices) (vector-length vec)))
+    (error 'vector-reorder "index list not same length as vector"))
+  (for/vector ([idx (in-vector indices)])
+    (vector-ref vec idx)))
 
 ; binary searches in a series for a given value,
 ; then continues linear searching until we reach the end of it

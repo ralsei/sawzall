@@ -5,10 +5,8 @@
          syntax/parse/define)
 (provide (struct-out column-proc)
          (struct-out row-proc)
-         (struct-out sort-proc)
          (for-syntax column-syntax-form
-                     row-syntax-form
-                     sort-syntax-form))
+                     row-syntax-form))
 
 (struct column-proc (columns bindings procs) #:transparent)
 
@@ -50,17 +48,3 @@
         (row-proc (list (symbol->string 'bound) ...)
                   (λ (bound ...)
                     body ...)))]))
-
-(struct sort-proc (columns comparators))
-
-(define-for-syntax (sort-syntax-form stx internal-function-stx)
-  (syntax-parse stx
-    [(_ frame:expr [col:id body:expr ...] ...)
-     #:with internal-function internal-function-stx
-     #:with fn-name (attribute internal-function)
-     #'(internal-function
-        frame
-        (sort-proc (list (symbol->string 'col) ...)
-                   (list (contract (-> any/c any/c boolean?) (let () body ...)
-                                   'fn-name 'fn-name)
-                         ...)))]))
