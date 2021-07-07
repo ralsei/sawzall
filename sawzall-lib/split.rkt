@@ -7,13 +7,11 @@
          "helpers.rkt")
 (provide
  (contract-out [split-with (-> data-frame? string? (listof data-frame?))]
-               [combine (->* () #:rest (non-empty-listof data-frame?) data-frame?)]))
+               [combine (->* () #:rest (non-empty-listof data-frame?) data-frame?)])
+ split-with-possibility)
 
-; defines the split operation, which constructs multiple data-frames from
-; an existing data-frame.
-; does NOT produce another data-frame, instead producing a list of data-frames
-; split into unique groups.
-(define (split-with df group)
+; splitting, and recording the possibility
+(define (split-with-possibility df group)
   (define (df-with possibility)
     (define return-df (make-data-frame))
     ; TODO: data-frame uses bsearch for this
@@ -27,8 +25,16 @@
                                   (df-ref df idx col)))))
     (for ([s (in-list new-series)])
       (df-add-series! return-df s))
-    return-df)
-  (vector->list (vector-map df-with (possibilities df group))))
+    (cons possibility return-df))
+  (vector-map df-with (possibilities df group)))
+
+; defines the split operation, which constructs multiple data-frames from
+; an existing data-frame.
+; does NOT produce another data-frame, instead producing a list of data-frames
+; split into unique groups.
+(define (split-with df group)
+  (for/list ([v (in-vector (split-with-possibility df group))])
+    (cdr v)))
 
 ; shared series between data-frames
 (define (shared-series dfs)

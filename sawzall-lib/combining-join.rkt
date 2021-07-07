@@ -2,7 +2,6 @@
 (require data-frame
          fancy-app
          racket/contract/base
-         racket/vector
          "helpers.rkt"
          "grouping.rkt"
          "reorder.rkt"
@@ -29,23 +28,6 @@
                                        (#:cmp? (-> any/c any/c boolean?))
                                        (or/c data-frame? grouped-data-frame?))]))
 
-(define (split-with/cons df group)
-  (define (df-with possibility)
-    (define return-df (make-data-frame))
-    ; TODO: data-frame uses bsearch for this
-    (define possibility-indices
-      (for/list ([(v idx) (in-indexed (in-vector (df-select df group)))]
-                 #:when (equal? v possibility))
-        idx))
-    (define new-series
-      (for/list ([col (in-list (df-series-names df))])
-        (make-series col #:data (for/vector ([idx (in-list possibility-indices)])
-                                  (df-ref df idx col)))))
-    (for ([s (in-list new-series)])
-      (df-add-series! return-df s))
-    (cons possibility return-df))
-  (vector-map df-with (possibilities df group)))
-
 (define (left-join df1 df2 by #:cmp? [cmp? orderable<?])
   (ignore-grouping (left-join-dfs _ (ungroup-all df2) by cmp?) df1))
 (define (right-join df1 df2 by #:cmp? [cmp? orderable<?])
@@ -55,7 +37,7 @@
 (define (full-join df1 df2 by #:cmp? [cmp? orderable<?])
   (ignore-grouping (full-join-dfs _ (ungroup-all df2) by cmp?) df1))
 
-; just pad missing data with #f
+; pad any missing data that isn't matched in any column in df2 with #f
 (define (join-no-matches df1 df2-series)
   (define return-df (make-data-frame))
   (define df1-size (df-row-count df1))
@@ -82,78 +64,44 @@
 
   return-df)
 
-; takes all rows from df1, and all columns from df1 and df2. rows in df1 with no match in df2
-; will have #f values in the new columns.
+; defines a generic combining join
 ;
-; XXX: is there a way to determine what the actual NA value is, or do we just have to guess?
-(define (left-join-dfs df1 df2 by cmp?)
+; (on-df2-end df1 df2-names acc): determines what to do with `df1`, the rows of the first df,
+; `df2-names`, the series names of the second df, and `acc`, the accumulator when df2 ends
+; (on-lt df1 df2-names acc): determines what to do with `df1`, the rows of the first df,
+; `df2-names`, the series names of the second df, and `acc`, the accumulator when df1 < df2
+; (on-else df1-names df2 acc): determines what to do with `df2-names`, the series names of the
+; first df, `df2`, the rows of the second df, and `acc`, the accumulator when df1 > df2
+;
+; when df1 ends, we terminate and combine all results
+; when the values are equal, we always call `join-matches`
+;
+; XXX: optimizations that could be done:
+; - combining data-frames is costly and requires a lot of `vector-append`. we could probably use
+; a "window"/"lens" into the data-frame and then iterate over series
+; - split-with should use binary search if the series is sorted
+(define ((combining-join on-df2-end on-lt on-else) df1 df2 by cmp?)
+  ; sort and split, to make merge work. if we don't split, we can't handle duplicate keys
   (define df1-sorted (reorder/int df1 (sort-proc (list by) (list cmp?))))
   (define df2-sorted (reorder/int df2 (sort-proc (list by) (list cmp?))))
 
-  (define df1-split (split-with/cons df1-sorted by))
-  (define df2-split (split-with/cons df2-sorted by))
+  (define df1-split (split-with-possibility df1-sorted by))
+  (define df2-split (split-with-possibility df2-sorted by))
 
+  ; the return of merge from the hit series merge sort
   (let loop ([df1-idx 0] [df2-idx 0] [dfs '()])
-    (cond [(>= df1-idx (vector-length df1-split)) (apply combine (reverse dfs))]
-          [(>= df2-idx (vector-length df2-split))
-           (loop (add1 df1-idx) df2-idx
-                 (cons (join-no-matches (cdr (vector-ref df1-split df1-idx))
-                                        (df-series-names df2))
-                       dfs))]
-          [(equal? (car (vector-ref df1-split df1-idx))
-                   (car (vector-ref df2-split df2-idx)))
-           (loop (add1 df1-idx) (add1 df2-idx)
-                 (cons (join-matches (cdr (vector-ref df1-split df1-idx))
-                                     (cdr (vector-ref df2-split df2-idx))
-                                     by)
-                       dfs))]
-          [(cmp? (car (vector-ref df1-split df1-idx))
-                 (car (vector-ref df2-split df2-idx)))
-           (loop (add1 df1-idx) df2-idx
-                 (cons (join-no-matches (cdr (vector-ref df1-split df1-idx))
-                                        (df-series-names df2))
-                       dfs))]
-          [else (loop df1-idx (add1 df2-idx) dfs)])))
-
-(define (inner-join-dfs df1 df2 by cmp?)
-  (define df1-sorted (reorder/int df1 (sort-proc (list by) (list cmp?))))
-  (define df2-sorted (reorder/int df2 (sort-proc (list by) (list cmp?))))
-
-  (define df1-split (split-with/cons df1-sorted by))
-  (define df2-split (split-with/cons df2-sorted by))
-
-  (let loop ([df1-idx 0] [df2-idx 0] [dfs '()])
-    (cond [(or (>= df1-idx (vector-length df1-split))
-               (>= df2-idx (vector-length df2-split)))
+    (cond [(>= df1-idx (vector-length df1-split))
+           ; we've run out of vector to use, so return the final df
            (apply combine (reverse dfs))]
-          [(equal? (car (vector-ref df1-split df1-idx))
-                   (car (vector-ref df2-split df2-idx)))
-           (loop (add1 df1-idx) df2-idx
-                 (cons (join-matches (cdr (vector-ref df1-split df1-idx))
-                                     (cdr (vector-ref df2-split df2-idx))
-                                     by)
-                       dfs))]
-          [(cmp? (car (vector-ref df1-split df1-idx))
-                 (car (vector-ref df2-split df2-idx)))
-           (loop (add1 df1-idx) df2-idx dfs)]
-          [else (loop df1-idx (add1 df2-idx) dfs)])))
-
-(define (full-join-dfs df1 df2 by cmp?)
-  (define df1-sorted (reorder/int df1 (sort-proc (list by) (list cmp?))))
-  (define df2-sorted (reorder/int df2 (sort-proc (list by) (list cmp?))))
-
-  (define df1-split (split-with/cons df1-sorted by))
-  (define df2-split (split-with/cons df2-sorted by))
-
-  (let loop ([df1-idx 0] [df2-idx 0] [dfs '()])
-    (cond [(>= df1-idx (vector-length df1-split)) (apply combine (reverse dfs))]
           [(>= df2-idx (vector-length df2-split))
+           ; we've run out of the second vector. this varies between joins
            (loop (add1 df1-idx) df2-idx
-                 (cons (join-no-matches (cdr (vector-ref df1-split df1-idx))
-                                        (df-series-names df2))
-                       dfs))]
+                 (on-df2-end (cdr (vector-ref df1-split df1-idx))
+                             (df-series-names df2)
+                             dfs))]
           [(equal? (car (vector-ref df1-split df1-idx))
                    (car (vector-ref df2-split df2-idx)))
+           ; the rows share the same key, so merge them with combining
            (loop (add1 df1-idx) (add1 df2-idx)
                  (cons (join-matches (cdr (vector-ref df1-split df1-idx))
                                      (cdr (vector-ref df2-split df2-idx))
@@ -161,11 +109,44 @@
                        dfs))]
           [(cmp? (car (vector-ref df1-split df1-idx))
                  (car (vector-ref df2-split df2-idx)))
+           ; df1 < df2, so keep incrementing the df1 index until they match, and
+           ; update the accumulator (varies)
            (loop (add1 df1-idx) df2-idx
-                 (cons (join-no-matches (cdr (vector-ref df1-split df1-idx))
-                                        (df-series-names df2))
-                       dfs))]
-          [else (loop df1-idx (add1 df2-idx)
-                      (cons (join-no-matches (cdr (vector-ref df2-split df2-idx))
-                                             (df-series-names df1))
-                            dfs))])))
+                 (on-lt (cdr (vector-ref df1-split df1-idx))
+                        (df-series-names df2)
+                        dfs))]
+          [else
+           ; df1 > df2, so keep incrementing the df2 index until they match, and
+           ; update the accumulator (again, varies)
+           (loop df1-idx (add1 df2-idx)
+                 (on-else (df-series-names df1)
+                          (cdr (vector-ref df2-split df2-idx))
+                          dfs))])))
+
+(define left-join-dfs
+  (combining-join
+   ; if df2 ends, keep adding #f
+   (λ (df1 df2-names acc)
+     (cons (join-no-matches df1 df2-names) acc))
+   ; if df1 < df2, add #f
+   (λ (df1 df2-names acc)
+     (cons (join-no-matches df1 df2-names) acc))
+   ; if df1 > df2, do nothing
+   (λ (df1-names df2 acc) acc)))
+
+(define inner-join-dfs
+  ; only do something if we're equal
+  (combining-join
+   (λ (df1 df2-names acc) acc)
+   (λ (df1 df2-names acc) acc)
+   (λ (df1-names df2 acc) acc)))
+
+(define full-join-dfs
+  ; keep adding #f no matter what
+  (combining-join
+   (λ (df1 df2-names acc)
+     (cons (join-no-matches df1 df2-names) acc))
+   (λ (df1 df2-names acc)
+     (cons (join-no-matches df1 df2-names) acc))
+   (λ (df1-names df2 acc)
+     (cons (join-no-matches df2 df1-names) acc))))
