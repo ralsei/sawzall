@@ -229,6 +229,23 @@ These operations join two tables in varying ways, along some common column (the 
 All joining operations ignore grouping. The grouping of the first argument will be preserved,
 but grouping does not play a factor in how the operation performs (compared to a plain table).
 
+The following example data-frames are used in this section:
+@examples[#:eval ev #:label #f
+  (define woodland1
+    (for/data-frame (site habitat)
+                    ([site (in-list (list "b" "a" "c"))]
+                     [habitat (in-list (list "grassland"
+                                             "meadow"
+                                             "woodland"))])
+      (values site habitat)))
+  (define woodland2
+    (for/data-frame (site day catch)
+                    ([site (in-list (list "c" "b" "c" "b"))]
+                     [day (in-list (list 1 1 2 2))]
+                     [catch (in-list (list 10 12 20 24))])
+      (values site day catch)))
+]
+
 @subsection{Combining joins}
 
 These joins combine variables from the two input data-frames.
@@ -251,19 +268,6 @@ These joins combine variables from the two input data-frames.
   @racket[orderable<?], which is in essence a "best guess" comparator.
 
   @examples[#:eval ev
-    (define woodland1
-      (for/data-frame (site habitat)
-                      ([site (in-list (list "b" "a" "c"))]
-                       [habitat (in-list (list "grassland"
-                                               "meadow"
-                                               "woodland"))])
-        (values site habitat)))
-    (define woodland2
-      (for/data-frame (site day catch)
-                      ([site (in-list (list "c" "b" "c" "b"))]
-                       [day (in-list (list 1 1 2 2))]
-                       [catch (in-list (list 10 12 20 24))])
-        (values site day catch)))
     (show (left-join woodland1 woodland2 "site"))
     (show (left-join woodland2 woodland1 "site"))
   ]
@@ -274,10 +278,47 @@ These joins combine variables from the two input data-frames.
                      [by string?]
                      [#:cmp? cmp? (-> any/c any/c boolean?) orderable<?])
          (or/c data-frame? grouped-data-frame?)]{
-  Returns a new data-frame, with all rows from @racket[df2], and all colums from @racket[df1]
-  and @racket[df2]. Rows are compared by the value of @racket[by].
+  Returns a new data-frame, with all rows from @racket[df2], and all columns from @racket[df1]
+  and @racket[df2]. Rows are compared by the value of the variable @racket[by].
 
   This is equivalent to @racket[(left-join df2 df1 by #:cmp? cmp?)].
+}
+
+@defproc[(inner-join [df1 (or/c data-frame? grouped-data-frame?)]
+                     [df2 (or/c data-frame? grouped-data-frame?)]
+                     [by string?]
+                     [#:cmp? cmp? (-> any/c any/c boolean? orderable<?)])
+         (or/c data-frame? grouped-data-frame?)]{
+  Returns a new data-frame, with all rows from @racket[df1] with matching rows in @racket[df2],
+  and columns of both @racket[df1] and @racket[df2]. Rows are compared by the value of the variable
+  @racket[by].
+
+  If there are multiple matches between the rows of @racket[df1] and @racket[df2], all combinations
+  of the matches are returned.
+
+  @racket[cmp?] is used to sort the two data-frames before joining.
+
+  @examples[#:eval ev
+    (show (inner-join woodland1 woodland2 "site"))
+  ]
+}
+
+@defproc[(full-join [df1 (or/c data-frame? grouped-data-frame?)]
+                    [df2 (or/c data-frame? grouped-data-frame?)]
+                    [by string?]
+                    [#:cmp? cmp? (-> any/c any/c boolean? orderable<?)])
+         (or/c data-frame? grouped-data-frame?)]{
+  Returns a new data-frame, with all rows and columns from @racket[df1] and @racket[df2]. Rows are
+  compared by the value of the variable @racket[by].
+
+  If there is a row in @racket[df1] that does not have a value in @racket[df2], or vice versa, they
+  will have NA values in the new columns.
+
+  @racket[cmp?] is used to sort the two data-frames before joining.
+
+  @examples[#:eval ev
+    (show (full-join woodland2 woodland1 "site"))
+  ]
 }
 
 @subsection{Filtering joins}

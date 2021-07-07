@@ -1,10 +1,10 @@
 #lang racket/base
 (require "aggregate.rkt"
+         "combining-join.rkt"
          "create.rkt"
          "display.rkt"
          "grouping.rkt"
          "helpers.rkt"
-         "join.rkt"
          "rename.rkt"
          "reorder.rkt"
          "split.rkt"
@@ -17,6 +17,6 @@
          where
          orderable? orderable<?
          reorder by-vector
-         left-join right-join
+         left-join right-join inner-join full-join
          rename
          show introspect)
