@@ -5,6 +5,7 @@
          "display.rkt"
          "grouping.rkt"
          "helpers.rkt"
+         "pivot.rkt"
          "rename.rkt"
          "reorder.rkt"
          "split.rkt"
@@ -19,4 +20,5 @@
          reorder by-vector
          left-join right-join inner-join full-join
          rename
+         pivot-longer
          show introspect)

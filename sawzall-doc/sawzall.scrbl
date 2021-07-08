@@ -398,6 +398,6 @@ This join creates a column in its result that is a list of other values.
   Used by default by joins and @racket[reorder].
 }
 
-@section[#:tag "reshaping"]{Reshaping}
+@section[#:tag "pivoting"]{Pivoting}
 
 @bold{Unimplemented.}
