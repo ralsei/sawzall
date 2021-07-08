@@ -15,7 +15,7 @@
 ; summarizes a given data-frame into the given result by the saw-lambda, after splitting by group
 (define/contract (aggregate/int df proc)
   (-> (or/c data-frame? grouped-data-frame?) column-proc? (or/c data-frame? grouped-data-frame?))
-  (ungroup (group-map (aggregate-already-split _ _ proc) df #:pass-groups? #t)))
+  (ungroup-once (group-map (aggregate-already-split _ _ proc) df #:pass-groups? #t)))
 
 ; after already having split the data-frame up, aggregate the results
 (define (aggregate-already-split df retain proc)

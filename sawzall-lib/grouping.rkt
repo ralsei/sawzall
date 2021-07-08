@@ -12,10 +12,10 @@
                [group-with (->* (data-frame?)
                                 #:rest (non-empty-listof string?)
                                 grouped-data-frame?)]
+               [ungroup-once (-> (or/c data-frame? grouped-data-frame?)
+                                 (or/c data-frame? grouped-data-frame?))]
                [ungroup (-> (or/c data-frame? grouped-data-frame?)
-                            (or/c data-frame? grouped-data-frame?))]
-               [ungroup-all (-> (or/c data-frame? grouped-data-frame?)
-                                data-frame?)])
+                            data-frame?)])
  listof-data-frames? ->grouped-data-frame
  group-map ignore-grouping)
 
@@ -48,7 +48,7 @@
                (all-groups (first dfs)))]))
   ; strip grouping, apply, then regroup
   (define grps (all-groups df))
-  (define merged-df (ungroup-all df))
+  (define merged-df (ungroup df))
   (define res (if pass-groups? (appl merged-df grps) (appl merged-df)))
   (if regroup? (apply group-with res grps) res))
 
@@ -63,7 +63,7 @@
         (map (iter _ rst new-acc) (split-with d fst)))]))
   (iter df groups '()))
 
-(define (ungroup grouped-df)
+(define (ungroup-once grouped-df)
   (cond [(data-frame? grouped-df) grouped-df]
         [else
          (match-define (grouped-data-frame grp dfs) grouped-df)
@@ -77,8 +77,8 @@
         xs
         (fix f next))))
 
-(define (ungroup-all grouped-df)
-  (fix ungroup grouped-df))
+(define (ungroup grouped-df)
+  (fix ungroup-once grouped-df))
 
 ; meh, no real need to check all of it -- lists are probably homogenous unless something
 ; goes horribly wrong

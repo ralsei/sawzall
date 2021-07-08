@@ -11,7 +11,7 @@
          "where.rkt")
 (provide split-with combine
          grouped-data-frame?
-         group-with ungroup ungroup-all
+         group-with ungroup-once ungroup
          aggregate
          create
          where

@@ -87,16 +87,16 @@ it into a grouped one, in which operations are performed by group.
   ]
 }
 
-@defproc[(ungroup [df (or/c data-frame? grouped-data-frame?)]) (or/c data-frame? grouped-data-frame?)]{
-  Removes the last level of grouping from a grouped data frame. For example, if a grouped frame is grouped
-  by X and Y, ungrouping it would make it grouped by just X.
+@defproc[(ungroup-all [df (or/c data-frame? grouped-data-frame?)]) data-frame?]{
+  Removes all levels of grouping from a grouped data frame, returning a singular data frame. In most cases,
+  you'll want to do this before passing your wrangled data to some other application.
 
   If @racket[df] is not grouped, this does nothing.
 }
 
-@defproc[(ungroup-all [df (or/c data-frame? grouped-data-frame?)]) data-frame?]{
-  Removes all levels of grouping from a grouped data frame, returning a singular data frame. In most cases,
-  you'll want to do this before passing your wrangled data to some other application.
+@defproc[(ungroup-once [df (or/c data-frame? grouped-data-frame?)]) (or/c data-frame? grouped-data-frame?)]{
+  Removes the last level of grouping from a grouped data frame. For example, if a grouped frame is grouped
+  by X and Y, running @racket[ungroup-once] it would make it grouped by just X.
 
   If @racket[df] is not grouped, this does nothing.
 }
@@ -268,8 +268,12 @@ These joins combine variables from the two input data-frames.
   @racket[orderable<?], which is in essence a "best guess" comparator.
 
   @examples[#:eval ev
-    (show (left-join woodland1 woodland2 "site"))
-    (show (left-join woodland2 woodland1 "site"))
+    (~> woodland1
+        (left-join woodland2 "site")
+        show)
+    (~> woodland2
+        (left-join woodland1 "site")
+        show)
   ]
 }
 
@@ -299,7 +303,9 @@ These joins combine variables from the two input data-frames.
   @racket[cmp?] is used to sort the two data-frames before joining.
 
   @examples[#:eval ev
-    (show (inner-join woodland1 woodland2 "site"))
+    (~> woodland1
+        (inner-join woodland2 "site")
+        show)
   ]
 }
 
@@ -317,7 +323,9 @@ These joins combine variables from the two input data-frames.
   @racket[cmp?] is used to sort the two data-frames before joining.
 
   @examples[#:eval ev
-    (show (full-join woodland2 woodland1 "site"))
+    (~> woodland2
+        (full-join woodland1 "site")
+        show)
   ]
 }
 
@@ -337,6 +345,7 @@ This join creates a column in its result that is a list of other values.
 
 @defproc[(reorder [df (or/c data-frame? grouped-data-frame?)]
                   [column-spec (or/c string? (cons/c string? (-> any/c any/c boolean?)))]
+                  [#:in-groups in-groups? boolean? #f]
                   ...)
          (or/c data-frame? grouped-data-frame?)]{
   Returns @racket[df], except sorted by a series of columns. Each @racket[column-spec] is either a column
@@ -345,10 +354,17 @@ This join creates a column in its result that is a list of other values.
   If no comparator is specified, it defaults to @racket[orderable<?], which will cause an ascending sort
   for most types of data.
 
+  This operation ignores grouping by default, and instead sorts the entire data-frame. To sort by group,
+  use @racket[#:in-groups? #t].
+
   @examples[#:eval ev
     (~> example-df
         (reorder (cons "trt" string-ci>?)
                  (cons "adult" >))
+        show)
+    (~> example-df
+        (group-with "grp")
+        (reorder (cons "adult" >) #:in-groups? #t)
         show)
   ]
 }
