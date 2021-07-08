@@ -1,6 +1,7 @@
 #lang racket/base
 (require "aggregate.rkt"
          "combining-join.rkt"
+         "constructors.rkt"
          "create.rkt"
          "display.rkt"
          "grouping.rkt"
@@ -20,5 +21,6 @@
          reorder by-vector
          left-join right-join inner-join full-join
          rename
-         pivot-longer
-         show introspect)
+         pivot-longer pivot-wider
+         show introspect
+         column-df row-df)

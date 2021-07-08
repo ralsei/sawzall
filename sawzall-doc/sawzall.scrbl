@@ -26,15 +26,34 @@ without it, most operations will be more natural expressed with @racket[~>].
 Many examples in this documentation will be based around the following simple frame:
 @examples[#:eval ev #:label #f
   (define example-df
-    (for/data-frame (grp trt adult juv)
-                    ([grp-val (in-list (list "a" "a" "b" "b" "b"))]
-                     [trt-val (in-list (list "a" "b" "a" "b" "b"))]
-                     [adult-val (in-inclusive-range 1 5)]
-                     [juv-val (in-inclusive-range 10 50 10)])
-      (values grp-val trt-val adult-val juv-val)))
+    (row-df '("grp" "trt" "adult" "juv")
+            '(("a"  "a"   1       10)
+              ("a"  "b"   2       20)
+              ("b"  "a"   3       30)
+              ("b"  "b"   4       40)
+              ("b"  "b"   5       50))))
 ]
 
 @table-of-contents[]
+
+@section[#:tag "constructors"]{Constructing data-frames}
+
+@defproc[(column-df [column-names (listof string?)]
+                    [column-list (listof (listof any/c))])
+         data-frame?]{
+  Constructs a data-frame with the given @racket[column-names], with each @racket[column-list] as
+  the data in each column. Primarily for use in examples.
+}
+
+@defproc[(row-df [column-names (listof string?)]
+                 [row-list (listof (listof any/c))])
+         data-frame?]{
+  Constructs a data-frame with the given @racket[column-names], with each row being specified by
+  an element in @racket[row-list].
+
+  This is almost solely for use in small examples -- it is not efficient. It was designed for this
+  documentation to make reading examples easier.
+}
 
 @section[#:tag "display"]{Displaying data}
 
@@ -232,18 +251,16 @@ but grouping does not play a factor in how the operation performs (compared to a
 The following example data-frames are used in this section:
 @examples[#:eval ev #:label #f
   (define woodland1
-    (for/data-frame (site habitat)
-                    ([site (in-list (list "b" "a" "c"))]
-                     [habitat (in-list (list "grassland"
-                                             "meadow"
-                                             "woodland"))])
-      (values site habitat)))
+    (row-df '("site" "habitat")
+            '(("b"   "grassland")
+              ("a"   "meadow")
+              ("c"   "woodland"))))
   (define woodland2
-    (for/data-frame (site day catch)
-                    ([site (in-list (list "c" "b" "c" "b"))]
-                     [day (in-list (list 1 1 2 2))]
-                     [catch (in-list (list 10 12 20 24))])
-      (values site day catch)))
+    (row-df '("site" "day" "catch")
+            '(("c"   1     10)
+              ("b"   1     12)
+              ("c"   2     20)
+              ("b"   2     24))))
 ]
 
 @subsection{Combining joins}
@@ -400,4 +417,72 @@ This join creates a column in its result that is a list of other values.
 
 @section[#:tag "pivoting"]{Pivoting}
 
-@bold{Unimplemented.}
+@defproc[(pivot-longer [df data-frame?] [cols (non-empty-listof string?)]
+                       [#:names-to names-to string?]
+                       [#:values-to values-to string?])
+         data-frame?]{
+  Returns a new data-frame that is the input @racket[df] pivoted "longer", so less columns,
+  more rows. This is useful for tidying wide-form data.
+
+  @racket[cols] are the columns to pivot (the ones to switch from wide form). Any column not
+  in @racket[cols] will be brought along so that former observations line up, but its data will
+  not be modified.
+
+  All the names of every column in @racket[cols] is brought into a new column with name @racket[names-to],
+  and all the values are brought into a new column with name @racket[values-to].
+
+  This function does not work with grouped data frames, as it has potential to destroy some internal
+  invariants.
+
+  @examples[#:eval ev
+    (define wide-df
+      (row-df '("day" "hour" "a" "b" "c")
+              '((1    10     97  84  55)
+                (2    11     78  47  54))))
+    (~> wide-df
+        (pivot-longer '("a" "b" "c") #:names-to "site" #:values-to "catch")
+        show)
+  ]
+}
+
+@defproc[(pivot-wider [df data-frame?]
+                      [#:names-from names-from string?]
+                      [#:values-from values-from string?])
+         data-frame?]{
+  Returns a new data-frame that is the input @racket[df] pivoted "wider", so less rows, more columns.
+  This is useful for putting data into "wide form", optimized for data entry for export into spreadsheet
+  software like Excel, or for some convoluted tidying pipeline.
+
+  @racket[names-from] is the column to create new columns from, and @racket[values-from] is the column to
+  get the corresponding data from.
+
+  If a value is not found in the long format data-frame, it will be replaced with "NA" (@racket[#f]).
+
+  This function does not work with grouped data frames, as it has potential to destroy some internal
+  invariants.
+
+  @examples[#:eval ev
+    (define long-df1
+      (row-df '("day" "grp" "val")
+              '((1    "A"   10)
+                (1    "B"   20)
+                (2    "B"   30))))
+    (~> long-df1
+        (pivot-wider #:names-from "grp" #:values-from "val")
+        show)
+
+    (define long-df2
+      (row-df '("day" "hour" "grp" "val")
+              '((1    10     "a"   83)
+                (1    10     "b"   78)
+                (1    11     "a"   80)
+                (1    11     "b"   105)
+                (2    10     "a"   95)
+                (2    10     "b"   77)
+                (2    11     "a"   96)
+                (2    11     "b"   99))))
+    (~> long-df2
+        (pivot-wider #:names-from "grp" #:values-from "val")
+        show)
+  ]
+}

@@ -2,12 +2,19 @@
 (require data-frame
          fancy-app
          racket/contract/base
+         racket/format
          racket/list
          racket/set
-         racket/vector)
+         racket/vector
+         "combining-join.rkt"
+         "rename.rkt"
+         "split.rkt")
 (provide (contract-out [pivot-longer (-> data-frame? (non-empty-listof string?)
                                          #:names-to string? #:values-to string?
-                                         data-frame?)]))
+                                         data-frame?)]
+                       [pivot-wider (-> data-frame?
+                                        #:names-from string? #:values-from string?
+                                        data-frame?)]))
 
 ; lengthens data, increasing the number of rows and decreasing the number of columns
 (define (pivot-longer df cols
@@ -41,10 +48,30 @@
 
   return-df)
 
-(define test-df (make-data-frame))
+; widens data, decreasing the number of rows and increasing the number of columns
+; XXX: this is not particularly efficient, but intuitive. should see what dplyr does
+(define (pivot-wider df #:names-from name-from #:values-from value-from)
+  (define split (split-with-possibility df name-from))
 
-(df-add-series! test-df (make-series "day" #:data (vector 1 1 2 2)))
-(df-add-series! test-df (make-series "hour" #:data (vector 10 11 10 11)))
-(df-add-series! test-df (make-series "a" #:data (vector 97 78 83 30)))
-(df-add-series! test-df (make-series "b" #:data (vector 84 47 73 46)))
-(df-add-series! test-df (make-series "c" #:data (vector 55 54 38 58)))
+  ; induce keys that we can merge on
+  (for ([v (in-vector split)])
+    (define cnt (df-row-count (cdr v)))
+    (df-add-series! (cdr v) (make-series "join-on" #:data (build-vector cnt (λ (x) x)))))
+
+  (define to-ljoin
+    (for/list ([on-possibility (in-vector split)])
+      (define val (car on-possibility))
+      (define int-df (cdr on-possibility))
+
+      (define ret (rename int-df value-from (~a val)))
+      (df-del-series! ret name-from)
+      ret))
+
+  (define return-df
+    (for/fold ([d (first to-ljoin)])
+              ([v (in-list (rest to-ljoin))])
+      (left-join v d "join-on")))
+
+  ; remove the keys to merge on
+  (df-del-series! return-df "join-on")
+  return-df)

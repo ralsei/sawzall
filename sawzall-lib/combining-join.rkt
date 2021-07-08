@@ -5,8 +5,7 @@
          "helpers.rkt"
          "grouping.rkt"
          "reorder.rkt"
-         "split.rkt"
-         "syntax.rkt")
+         "split.rkt")
 (provide (contract-out [left-join (->* ((or/c data-frame? grouped-data-frame?)
                                         (or/c data-frame? grouped-data-frame?)
                                         string?)
