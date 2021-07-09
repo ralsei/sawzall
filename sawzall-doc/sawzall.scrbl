@@ -62,8 +62,8 @@ however, these may be useful.
   Constructs a data-frame with the given @racket[column-name]s, row-by-row with the given
   @racket[value]s.
 
-  This is not efficient and is not designed to be. It is primarily designed for typesetting small
-  examples, like the ones in this documentation.
+  This method runs in quadratic time, but it is executed solely at compile time, so
+  its performance should be roughly equivalent to that of @racket[column-df].
 }
 
 @section[#:tag "display"]{Displaying data}
