@@ -26,33 +26,44 @@ without it, most operations will be more natural expressed with @racket[~>].
 Many examples in this documentation will be based around the following simple frame:
 @examples[#:eval ev #:label #f
   (define example-df
-    (row-df '("grp" "trt" "adult" "juv")
-            '(("a"  "a"   1       10)
-              ("a"  "b"   2       20)
-              ("b"  "a"   3       30)
-              ("b"  "b"   4       40)
-              ("b"  "b"   5       50))))
+    (row-df [grp trt adult juv]
+             "a" "b" 1     10
+             "a" "b" 2     20
+             "b" "a" 3     30
+             "b" "b" 4     40
+             "b" "b" 5     50))
 ]
 
 @table-of-contents[]
 
 @section[#:tag "constructors"]{Constructing data-frames}
 
-@defproc[(column-df [column-names (listof string?)]
-                    [column-list (listof (listof any/c))])
-         data-frame?]{
-  Constructs a data-frame with the given @racket[column-names], with each @racket[column-list] as
-  the data in each column. Primarily for use in examples.
+These are constructors for data-frames that may be more ergonomic than @racket[make-data-frame].
+Generally, while doing data analysis, you want to use @racket[df-read/csv] or a similar function
+to read in real-world data from some source. If you are constructing data from a Racket program,
+however, these may be useful.
+
+@defform[(column-df [column-name column-data] ...)
+         #:contracts ([column-name (or/c identfier? string?)]
+                      [column-data vector?])]{
+  Constructs a data-frame with the given @racket[column-name]s, with each @racket[column-data]
+  as the data in each column.
+
+  @racket[column-name] can either be an identifier or an expression that evaluates to a string.
+  If it is an identifier, it will be taken literally.
+
+  @examples[#:eval ev
+    (show (column-df [x (vector 1 2 3)]
+                     [(string-append "a" "b") (vector "a" "b" "c")]))
+  ]
 }
 
-@defproc[(row-df [column-names (listof string?)]
-                 [row-list (listof (listof any/c))])
-         data-frame?]{
-  Constructs a data-frame with the given @racket[column-names], with each row being specified by
-  an element in @racket[row-list].
+@defform[(row-df [column-name ...] value ...)]{
+  Constructs a data-frame with the given @racket[column-name]s, row-by-row with the given
+  @racket[value]s.
 
-  This is almost solely for use in small examples -- it is not efficient. It was designed for this
-  documentation to make reading examples easier.
+  This is not efficient and is not designed to be. It is primarily designed for typesetting small
+  examples, like the ones in this documentation.
 }
 
 @section[#:tag "display"]{Displaying data}
@@ -251,16 +262,16 @@ but grouping does not play a factor in how the operation performs (compared to a
 The following example data-frames are used in this section:
 @examples[#:eval ev #:label #f
   (define woodland1
-    (row-df '("site" "habitat")
-            '(("b"   "grassland")
-              ("a"   "meadow")
-              ("c"   "woodland"))))
+    (row-df [site habitat]
+             "b"  "grassland"
+             "a"  "meadow"
+             "c"  "woodland"))
   (define woodland2
-    (row-df '("site" "day" "catch")
-            '(("c"   1     10)
-              ("b"   1     12)
-              ("c"   2     20)
-              ("b"   2     24))))
+    (row-df [site day catch]
+             "c"  1   10
+             "b"  1   12
+             "c"  2   20
+             "b"  2   24))
 ]
 
 @subsection{Combining joins}
@@ -436,9 +447,9 @@ This join creates a column in its result that is a list of other values.
 
   @examples[#:eval ev
     (define wide-df
-      (row-df '("day" "hour" "a" "b" "c")
-              '((1    10     97  84  55)
-                (2    11     78  47  54))))
+      (row-df [day hour a  b  c]
+               1   10   97 84 55
+               2   11   78 47 54))
     (~> wide-df
         (pivot-longer '("a" "b" "c") #:names-to "site" #:values-to "catch")
         show)
@@ -463,24 +474,24 @@ This join creates a column in its result that is a list of other values.
 
   @examples[#:eval ev
     (define long-df1
-      (row-df '("day" "grp" "val")
-              '((1    "A"   10)
-                (1    "B"   20)
-                (2    "B"   30))))
+      (row-df [day grp val]
+               1   "A" 10
+               1   "B" 20
+               2   "B" 30))
     (~> long-df1
         (pivot-wider #:names-from "grp" #:values-from "val")
         show)
 
     (define long-df2
-      (row-df '("day" "hour" "grp" "val")
-              '((1    10     "a"   83)
-                (1    10     "b"   78)
-                (1    11     "a"   80)
-                (1    11     "b"   105)
-                (2    10     "a"   95)
-                (2    10     "b"   77)
-                (2    11     "a"   96)
-                (2    11     "b"   99))))
+      (row-df [day hour grp val]
+               1   10   "a" 83
+               1   10   "b" 78
+               1   11   "a" 80
+               1   11   "b" 105
+               2   10   "a" 95
+               2   10   "b" 77
+               2   11   "a" 96
+               2   11   "b" 99))
     (~> long-df2
         (pivot-wider #:names-from "grp" #:values-from "val")
         show)

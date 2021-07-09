@@ -1,6 +1,5 @@
 #lang racket/base
-(require (for-syntax racket/base)
-         data-frame
+(require data-frame
          fancy-app
          racket/contract
          racket/vector
