@@ -4,7 +4,8 @@
          racket/contract/base
          racket/set
          racket/vector
-         "helpers.rkt")
+         "helpers.rkt"
+         "reorder-df.rkt")
 (provide
  (contract-out [split-with (-> data-frame? string? (listof data-frame?))]
                [combine (->* () #:rest (non-empty-listof data-frame?) data-frame?)])
@@ -12,21 +13,33 @@
 
 ; splitting, and recording the possibility
 (define (split-with-possibility df group)
+  (define sorted-df (reorder-df df (list (cons group orderable<?))))
+
+  (define (make-indexer possibility)
+    (define has-na? (df-has-na? sorted-df group))
+    (define indices
+      (if has-na?
+          (for/list ([(v idx) (in-indexed (in-data-frame df group))]
+                     #:when (equal? v possibility))
+            idx)
+          (df-index-range sorted-df group possibility)))
+    (λ (column-name)
+      (make-series column-name
+                   #:data
+                   (if has-na?
+                       (for/vector ([idx (in-list indices)]) (df-ref df idx column-name))
+                       (vector-copy (df-select sorted-df column-name)
+                                    (car indices) (cdr indices))))))
+
   (define (df-with possibility)
     (define return-df (make-data-frame))
-    ; TODO: data-frame uses bsearch for this
-    (define possibility-indices
-      (for/list ([(v idx) (in-indexed (in-vector (df-select df group)))]
-                 #:when (equal? v possibility))
-        idx))
-    (define new-series
-      (for/list ([col (in-list (df-series-names df))])
-        (make-series col #:data (for/vector ([idx (in-list possibility-indices)])
-                                  (df-ref df idx col)))))
+    (define indexer (make-indexer possibility))
+    (define new-series (map indexer (df-series-names sorted-df)))
     (for ([s (in-list new-series)])
       (df-add-series! return-df s))
     (cons possibility return-df))
-  (vector-map df-with (possibilities df group)))
+
+  (vector-map df-with (possibilities sorted-df group)))
 
 ; defines the split operation, which constructs multiple data-frames from
 ; an existing data-frame.

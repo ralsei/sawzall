@@ -1,11 +1,10 @@
 #lang racket/base
 (require data-frame
          racket/contract/base
-         racket/list
          racket/set
          racket/vector
          threading)
-(provide possibilities df-index-all vector-reorder orderable?
+(provide possibilities vector-reorder orderable?
          (contract-out [orderable<? (-> orderable? orderable? boolean?)]))
 
 ; removes duplicates from a given vector
@@ -31,17 +30,6 @@
     (error 'vector-reorder "index list not same length as vector"))
   (for/vector ([idx (in-vector indices)])
     (vector-ref vec idx)))
-
-; binary searches in a series for a given value,
-; then continues linear searching until we reach the end of it
-; assumption: the input series is already sorted
-(define (df-index-all df series value)
-  (define first-occurrence (df-index-of df series value))
-  (define last-occurrence
-    (for/first ([idx (in-range first-occurrence (df-row-count df))]
-                #:when (not (equal? (df-ref df idx series) value)))
-      idx))
-  (inclusive-range first-occurrence last-occurrence))
 
 ; inferred generic comparator
 (define (orderable-major v)

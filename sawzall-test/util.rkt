@@ -1,6 +1,8 @@
 #lang racket
-(require data-frame sawzall)
-(provide data-frame~=? df-sorted-by?)
+(require data-frame
+         rackunit
+         sawzall)
+(provide data-frame~=? df-sorted-by? check-csv)
 
 ; checks if two data-frames are "equivalent".
 ; conditions, checked sequentially:
@@ -25,6 +27,14 @@
     (or (equal? tortoise hare)
         (cmp? tortoise hare))))
 
+(define-check (check-csv df csv-file)
+  (define saved (df-read/csv csv-file))
+  (unless (data-frame~=? df saved)
+    (define-values (base name must-be-dir?) (split-path csv-file))
+    (define data-file (build-path base (string-append "new" (path->string name))))
+    (df-write/csv df data-file)
+    (fail-check (format "csv not the same as df, new set written to ~a" data-file))))
+
 (module+ test
   (require rackunit)
 
@@ -39,4 +49,18 @@
                       [bs (in-range 8)])
       (values bs as)))
   (check data-frame~=? df1 df2)
-  (check df-sorted-by? df1 "al"))
+  (check df-sorted-by? df1 "al")
+
+  (define df3
+    (row-df [a b c]
+            1 2 3
+            4 5 6
+            7 8 9))
+  (define df4
+    (row-df [a b c]
+            9 9 9
+            8 8 8
+            7 7 7))
+  (check-true (df-sorted-by? df3 "a"))
+  (check-false (df-sorted-by? df4 "a"))
+  (check-true (df-sorted-by? df4 "a" #:cmp? >)))
