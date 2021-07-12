@@ -4,8 +4,12 @@
          racket/set
          racket/vector
          threading)
-(provide possibilities vector-reorder orderable?
+(provide possibilities vector-reorder orderable? df-na-value
          (contract-out [orderable<? (-> orderable? orderable? boolean?)]))
+
+; determines the NA value in a given df series
+(define (df-na-value df col)
+  (series-na (df-duplicate-series df col)))
 
 ; removes duplicates from a given vector
 (define (vector-remove-duplicates vec)
@@ -17,9 +21,7 @@
 
 ; determines the possible values that a given data-frame has in a column
 (define (possibilities data group)
-  (~>> (df-select data group)
-       vector-remove-duplicates
-       (vector-filter (λ (x) (and x #t)))))
+  (vector-remove-duplicates (df-select data group)))
 
 ; reorders a vector based on the given indices
 ; example:

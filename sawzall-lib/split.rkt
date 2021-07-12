@@ -16,18 +16,18 @@
   (define sorted-df (reorder-df df (list (cons group orderable<?))))
 
   (define (make-indexer possibility)
-    (define has-na? (df-has-na? sorted-df group))
+    (define not-really-sorted? (not (df-is-sorted? sorted-df group)))
     (define indices
-      (if has-na?
-          (for/list ([(v idx) (in-indexed (in-data-frame df group))]
+      (if not-really-sorted?
+          (for/list ([(v idx) (in-indexed (in-data-frame sorted-df group))]
                      #:when (equal? v possibility))
             idx)
           (df-index-range sorted-df group possibility)))
     (λ (column-name)
       (make-series column-name
                    #:data
-                   (if has-na?
-                       (for/vector ([idx (in-list indices)]) (df-ref df idx column-name))
+                   (if not-really-sorted?
+                       (for/vector ([idx (in-list indices)]) (df-ref sorted-df idx column-name))
                        (vector-copy (df-select sorted-df column-name)
                                     (car indices) (cdr indices))))))
 
