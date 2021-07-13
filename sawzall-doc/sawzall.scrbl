@@ -382,6 +382,10 @@ This join creates a column in its result that is a list of other values.
   If no comparator is specified, it defaults to @racket[orderable<?], which will cause an ascending sort
   for most types of data.
 
+  If a custom ordering is specified, it should be a strict ordering (so, if objects are @racket[equal?],
+  the comparator should return false). Otherwise, @racket[group-with] and other operations involving
+  binary search will behave unexpectedly.
+
   This operation ignores grouping by default, and instead sorts the entire data-frame. To sort by group,
   use @racket[#:in-groups? #t].
 

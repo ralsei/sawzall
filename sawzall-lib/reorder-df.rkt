@@ -22,5 +22,5 @@
     (df-add-series! return-df
                     (make-series col #:data (vector-reorder (df-select df col) indices))))
   (when (not (df-has-na? return-df col))
-    (df-set-sorted! return-df col (λ (a b) (or (equal? a b) (cmp? a b)))))
+    (df-set-sorted! return-df col cmp?))
   return-df)

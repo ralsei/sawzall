@@ -6,11 +6,11 @@
   (~> organdata
       (group-with "country")
       (aggregate [med (donors) (median < (vector-filter identity donors))])
-      (reorder [med <])
+      (reorder "med")
       (df-select "country")))
 (define sorted
   (~> organdata
-      (reorder [country (by-vector sorted-countries)])))
+      (reorder (cons "country" (by-vector sorted-countries)))))
 
 (graph #:data sorted
        #:mapping (aes #:x "donors" #:y "country")
