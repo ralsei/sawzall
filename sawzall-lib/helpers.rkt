@@ -1,9 +1,7 @@
 #lang racket/base
 (require data-frame
          racket/contract/base
-         racket/set
-         racket/vector
-         threading)
+         racket/set)
 (provide possibilities vector-reorder orderable? df-na-value
          (contract-out [orderable<? (-> orderable? orderable? boolean?)]))
 
