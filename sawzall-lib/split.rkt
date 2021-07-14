@@ -17,9 +17,6 @@
 
   (define (make-indexer possibility)
     (define not-really-sorted? (not (df-is-sorted? sorted-df group)))
-    (define-values (beg end) (series-equal-range (df-duplicate-series sorted-df group) possibility))
-    (displayln beg)
-    (displayln end)
     (define indices
       (if not-really-sorted?
           (for/list ([(v idx) (in-indexed (in-data-frame sorted-df group))]

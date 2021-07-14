@@ -7,6 +7,8 @@
          sawzall
          threading)
 
+(require profile)
+
 ;; load in data from the R nycflights13 package
 ;; R's `write.csv` stores NA as a string, so we have to account for that
 (define airlines (df-read/csv "data/airlines.csv" #:na "NA"))
@@ -87,16 +89,19 @@
 ;; exploring the relationship between the distance and average delay for each location
 ;; note the implicit ungroup for aggregate
 ;; cpu time: 11113 real time: 11133 gc time: 906
-(define delays
-  (~> flights
-      (group-with "dest")
-      (aggregate [count (dep_delay) (vector-length dep_delay)]
-                 [dist (distance) (mean (vector-filter identity distance))]
-                 [delay (arr_delay) (mean (vector-filter identity arr_delay))])
-      (where (count dest) (and (> count 20) (not (equal? dest "HNL"))))))
 
-(graph #:data delays
-       #:mapping (aes #:x "dist" #:y "delay")
-       #:theme (theme-override theme-default #:color-map 'tol-sd)
-       (points #:mapping (aes #:continuous-color "count"))
-       (fit #:method 'loess #:width 3))
+(profile-thunk
+ (λ ()
+   (define delays
+     (~> flights
+         (group-with "dest")
+         (aggregate [count (dep_delay) (vector-length dep_delay)]
+                    [dist (distance) (mean (vector-filter identity distance))]
+                    [delay (arr_delay) (mean (vector-filter identity arr_delay))])
+         (where (count dest) (and (> count 20) (not (equal? dest "HNL"))))))
+
+   (graph #:data delays
+          #:mapping (aes #:x "dist" #:y "delay")
+          #:theme (theme-override theme-default #:color-map 'tol-sd)
+          (points #:mapping (aes #:continuous-color "count"))
+          (fit #:method 'loess #:width 3))))

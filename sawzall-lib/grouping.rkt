@@ -4,11 +4,13 @@
          racket/contract/base
          racket/list
          racket/match
+         "bsearch.rkt"
+         "helpers.rkt"
          "split.rkt")
 (provide
- (contract-out [struct grouped-data-frame ((groups (listof string?))
-                                           (frames (non-empty-listof (or/c data-frame?
-                                                                           grouped-data-frame?))))]
+ (contract-out [struct grouped-data-frame ((delegate-frame data-frame?)
+                                           (groups (vectorof string?))
+                                           (group-indices (vectorof (vectorof ivl?))))]
                [group-with (->* (data-frame?)
                                 #:rest (non-empty-listof string?)
                                 grouped-data-frame?)]
@@ -16,14 +18,10 @@
                                  (or/c data-frame? grouped-data-frame?))]
                [ungroup (-> (or/c data-frame? grouped-data-frame?)
                             data-frame?)])
- listof-data-frames? ->grouped-data-frame
+ listof-data-frames?
  group-map ignore-grouping)
 
-(struct grouped-data-frame (groups frames) #:transparent)
-
-(define (->grouped-data-frame df)
-  (cond [(grouped-data-frame? df) df]
-        [else (grouped-data-frame null (list df))]))
+(struct grouped-data-frame (delegate-frame groups group-indices) #:transparent)
 
 (define (group-map appl df #:pass-groups? [pass-groups? #f])
   (define (iter d acc)
@@ -56,11 +54,11 @@
   (define (iter d grps acc)
     (match grps
       ['() d]
-      [`(,fst . ,rst)
-       (define new-acc (cons fst acc))
+      [`(,grp . ,rst)
+       (define new-acc (cons grp acc))
        (grouped-data-frame
         new-acc
-        (map (iter _ rst new-acc) (split-with d fst)))]))
+        (map (iter _ rst new-acc) (split-with d grp)))]))
   (iter df groups '()))
 
 (define (ungroup-once grouped-df)
