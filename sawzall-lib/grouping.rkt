@@ -5,80 +5,83 @@
          racket/list
          racket/match
          "bsearch.rkt"
+         "grouped-df.rkt"
          "helpers.rkt"
+         "reorder-df.rkt"
          "split.rkt")
 (provide
- (contract-out [struct grouped-data-frame ((delegate-frame data-frame?)
-                                           (groups (vectorof string?))
-                                           (group-indices (vectorof (vectorof ivl?))))]
-               [group-with (->* (data-frame?)
+ (contract-out [group-with (->* (data-frame?)
                                 #:rest (non-empty-listof string?)
                                 grouped-data-frame?)]
                [ungroup-once (-> (or/c data-frame? grouped-data-frame?)
                                  (or/c data-frame? grouped-data-frame?))]
                [ungroup (-> (or/c data-frame? grouped-data-frame?)
                             data-frame?)])
- listof-data-frames?
- group-map ignore-grouping)
+ grouped-df-apply ignore-groups-apply)
 
-(struct grouped-data-frame (delegate-frame groups group-indices) #:transparent)
+;;;; sorting by groups
+;; sorts the given data-frame by the given list of groups.
+;; unlike `reorder`, this behaves slightly differently, sorting by `grp` first
+;; and only using `grp2` to break ties, etc for others.
+;;
+;; TODO: this should support something other than `orderable<?`. how do we want
+;; to specify that?
+;; XXX: inefficient. most time in `sort-with-groups` is spent here
+(define (sort-with-groups df grps)
+  (reorder-df df (map (cons _ orderable<?) (reverse grps))))
 
-(define (group-map appl df #:pass-groups? [pass-groups? #f])
-  (define (iter d acc)
-    (cond [(grouped-data-frame? d)
-           (match d
-             [(grouped-data-frame grps dfs)
-              (grouped-data-frame grps (map (iter _ grps) dfs))])]
-          [(data-frame? d)
-           (if pass-groups?
-               (appl d acc)
-               (appl d))]))
-  (iter df null))
-
-(define (ignore-grouping appl df #:pass-groups? [pass-groups? #f] #:regroup? [regroup? #t])
-  (define (all-groups gdf)
-    (cond [(data-frame? gdf) (list)]
-          [(grouped-data-frame? gdf)
-           (match-define (grouped-data-frame grps dfs) gdf)
-           (if (listof-data-frames? dfs)
-               grps
-               ; all the same, so just take the first
-               (all-groups (first dfs)))]))
-  ; strip grouping, apply, then regroup
-  (define grps (all-groups df))
-  (define merged-df (ungroup df))
-  (define res (if pass-groups? (appl merged-df grps) (appl merged-df)))
-  (if regroup? (apply group-with res grps) res))
-
+;;;; constructing grouped data frames
 (define (group-with df . groups)
-  (define (iter d grps acc)
-    (match grps
-      ['() d]
-      [`(,grp . ,rst)
-       (define new-acc (cons grp acc))
-       (grouped-data-frame
-        new-acc
-        (map (iter _ rst new-acc) (split-with d grp)))]))
-  (iter df groups '()))
+  (define sorted (sort-with-groups df groups))
 
-(define (ungroup-once grouped-df)
-  (cond [(data-frame? grouped-df) grouped-df]
+  (define (build-group-vector grp [in-ivls (vector (ivl 0 (df-row-count df)))])
+    (define vec (df-select sorted grp))
+    (for*/vector ([interval (in-vector in-ivls)]
+                  [p (in-vector (possibilities sorted grp #:ivl interval))])
+      (match-define (ivl beg end) interval)
+      (call-with-values
+       (λ () (equal-range vec p #:cmp orderable<? #:start beg #:stop end))
+       ivl)))
+
+  (define grp-vecs
+    (for/fold ([vecs '()])
+              ([grp (in-list groups)])
+      (if (null? vecs)
+          (cons (build-group-vector grp) vecs)
+          (cons (build-group-vector grp (first vecs)) vecs))))
+
+  (grouped-data-frame df (reverse groups) grp-vecs))
+
+(define (ungroup-once gdf)
+  (cond [(data-frame? gdf) gdf]
         [else
-         (match-define (grouped-data-frame grp dfs) grouped-df)
-         (cond [(listof-data-frames? dfs)
-                (apply combine dfs)]
-               [else (grouped-data-frame grp (map ungroup dfs))])]))
+         (match-define (grouped-data-frame df grps grp-idxes) gdf)
+         (if (empty? (rest grps))
+             df
+             (grouped-data-frame df (rest grps) (rest grp-idxes)))]))
 
-(define (fix f xs)
-  (let ([next (f xs)])
-    (if (equal? next xs)
-        xs
-        (fix f next))))
+(define (ungroup gdf)
+  (if (grouped-data-frame? gdf)
+      (grouped-data-frame-delegate-frame gdf)
+      gdf))
 
-(define (ungroup grouped-df)
-  (fix ungroup-once grouped-df))
+;; applies a function (sub-data-frame? -> data-frame?) to a grouped data frame
+(define (grouped-df-apply fn df #:pass-groups? [pass-groups? #f])
+  (cond [(data-frame? df) (if pass-groups? (fn (df-with-ivl df) null) (fn (df-with-ivl df)))]
+        [(sub-data-frame? df) (if pass-groups? (fn df null) (fn df))]
+        [(grouped-data-frame? df)
+         (match-define (grouped-data-frame int-df grps grp-idxes) df)
+         (define (call ivl)
+           (if pass-groups?
+               (fn (df-with-ivl int-df ivl) grps)
+               (fn (df-with-ivl int-df ivl))))
+         (apply group-with
+                (apply combine
+                       (for/list ([i (in-vector (first grp-idxes))])
+                         (call i)))
+                grps)]))
 
-; meh, no real need to check all of it -- lists are probably homogenous unless something
-; goes horribly wrong
-(define (listof-data-frames? lst)
-  (and (list? lst) (data-frame? (first lst))))
+;; applies a function (sub-data-frame? -> data-frame?) to a grouped data frame,
+;; ignoring its grouping
+(define (ignore-groups-apply fn df #:pass-groups? [pass-groups? #f])
+  3)

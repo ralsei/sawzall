@@ -6,6 +6,7 @@
          racket/function
          racket/match
          racket/vector
+         "grouped-df.rkt"
          "grouping.rkt"
          "syntax.rkt")
 (provide create)
@@ -15,11 +16,13 @@
 
 (define/contract (create/int df proc)
   (-> (or/c data-frame? grouped-data-frame?) column-proc? (or/c data-frame? grouped-data-frame?))
-  (group-map (create-on-df _ proc) df))
+  (grouped-df-apply (create-on-df _ proc) df))
 
 (define (create-on-df df proc)
   (match-define (column-proc new-cols binders procs) proc)
-  (define return-df (df-shallow-copy df)) ; UNDOCUMENTED
+  (match-define (sub-data-frame internal-df (ivl beg end)) df)
+
+  (define return-df (df-shallow-copy internal-df))
 
   ; we have to support sequential saw-λ
   (for ([col-name (in-list new-cols)]
@@ -33,16 +36,16 @@
           to-apply
           (curry vector-map to-apply)))
 
-    (define len (df-row-count df))
+    (define len (df-row-count (sub-data-frame-delegate-frame df)))
     (define args
       (if all-vector?
-          (map (compose (df-select return-df _) car) binder)
+          (map (compose (df-select/sub return-df _) car) binder)
           (for/list ([binding (in-list binder)])
             (define var (car binding))
             (define ty (cdr binding))
             (if (eq? ty 'vector)
-                (make-vector len (df-select return-df var))
-                (df-select return-df var)))))
+                (make-vector len (df-select/sub return-df var))
+                (df-select/sub return-df var)))))
 
     (df-add-series!
      return-df

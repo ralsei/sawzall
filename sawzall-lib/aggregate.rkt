@@ -5,6 +5,7 @@
          racket/contract
          racket/match
          racket/vector
+         "grouped-df.rkt"
          "grouping.rkt"
          "syntax.rkt")
 (provide aggregate)
@@ -15,12 +16,13 @@
 ; summarizes a given data-frame into the given result by the saw-lambda, after splitting by group
 (define/contract (aggregate/int df proc)
   (-> (or/c data-frame? grouped-data-frame?) column-proc? (or/c data-frame? grouped-data-frame?))
-  (ungroup-once (group-map (aggregate-already-split _ _ proc) df #:pass-groups? #t)))
+  (ungroup-once (grouped-df-apply (aggregate-already-split _ _ proc) df #:pass-groups? #t)))
 
 ; after already having split the data-frame up, aggregate the results
 (define (aggregate-already-split df retain proc)
+  (define internal-df (sub-data-frame-delegate-frame df))
   (match-define (column-proc new-cols binders procs) proc)
-  (define empty-df? (= (df-row-count df) 0))
+  (define empty-df? (= (df-row-count internal-df) 0))
 
   (define return-df (make-data-frame))
   (define retain-series
@@ -29,7 +31,7 @@
       (make-series v
                    #:data (if empty-df?
                               (vector)
-                              (vector-take (df-select df v) 1)))))
+                              (vector-take (df-select/sub df v) 1)))))
   (define new-series
     (for/list ([new-col (in-list new-cols)]
                [binder (in-list binders)]
@@ -38,7 +40,7 @@
                    #:data (if empty-df?
                               (vector)
                               (vector
-                               (apply to-apply (map (compose (df-select df _) car)
+                               (apply to-apply (map (compose (df-select/sub df _) car)
                                                     binder)))))))
 
   (for ([s (in-list (append retain-series new-series))])

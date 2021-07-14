@@ -1,7 +1,9 @@
 #lang racket/base
 (require data-frame
          racket/contract/base
-         racket/set)
+         racket/match
+         racket/set
+         "grouped-df.rkt")
 (provide possibilities vector-reorder orderable? df-na-value
          (contract-out [orderable<? (-> orderable? orderable? boolean?)]))
 
@@ -18,8 +20,12 @@
     v))
 
 ; determines the possible values that a given data-frame has in a column
-(define (possibilities data group)
-  (vector-remove-duplicates (df-select data group)))
+(define (possibilities data group #:ivl [iv #f])
+  (match-define (ivl beg end)
+    (if (not iv)
+        (ivl 0 (df-row-count data))
+        iv))
+  (vector-remove-duplicates (df-select data group #:start beg #:stop end)))
 
 ; reorders a vector based on the given indices
 ; example:
