@@ -4,7 +4,7 @@
          racket/match
          racket/set
          "grouped-df.rkt")
-(provide possibilities vector-reorder orderable? df-na-value
+(provide possibilities vector-reorder vector-reorder! orderable? df-na-value
          (contract-out [orderable<? (-> orderable? orderable? boolean?)]))
 
 ; determines the NA value in a given df series
@@ -36,6 +36,25 @@
     (error 'vector-reorder "index list not same length as vector"))
   (for/vector ([idx (in-vector indices)])
     (vector-ref vec idx)))
+
+; takes the input vector and swaps the value at index A with that at index B,
+; mutably
+(define (vector-swap! vec a-idx b-idx)
+  (define temp (vector-ref vec a-idx))
+  (vector-set! vec a-idx (vector-ref vec b-idx))
+  (vector-set! vec b-idx temp))
+
+; like the above, but mutably with regards to the input
+(define (vector-reorder! vec indices)
+  (define src-idx 0)
+
+  (for ([tar-idx (in-range (vector-length vec))])
+    (set! src-idx (vector-ref indices tar-idx))
+    (let loop ()
+      (when (< src-idx tar-idx)
+        (set! src-idx (vector-ref indices src-idx))
+        (loop)))
+    (vector-swap! vec src-idx tar-idx)))
 
 ; inferred generic comparator
 (define (orderable-major v)

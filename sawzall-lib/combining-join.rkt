@@ -3,6 +3,7 @@
          fancy-app
          racket/contract/base
          "helpers.rkt"
+         "grouped-df.rkt"
          "grouping.rkt"
          "reorder.rkt"
          "split.rkt")
@@ -28,13 +29,13 @@
                                        (or/c data-frame? grouped-data-frame?))]))
 
 (define (left-join df1 df2 by #:cmp? [cmp? orderable<?])
-  (ignore-grouping (left-join-dfs _ (ungroup df2) by cmp?) df1))
+  (ignore-groups-apply (left-join-dfs _ (ungroup df2) by cmp?) df1))
 (define (right-join df1 df2 by #:cmp? [cmp? orderable<?])
-  (ignore-grouping (left-join-dfs (ungroup df2) _ by cmp?) df1))
+  (ignore-groups-apply (left-join-dfs (ungroup df2) _ by cmp?) df1))
 (define (inner-join df1 df2 by #:cmp? [cmp? orderable<?])
-  (ignore-grouping (inner-join-dfs _ (ungroup df2) by cmp?) df1))
+  (ignore-groups-apply (inner-join-dfs _ (ungroup df2) by cmp?) df1))
 (define (full-join df1 df2 by #:cmp? [cmp? orderable<?])
-  (ignore-grouping (full-join-dfs _ (ungroup df2) by cmp?) df1))
+  (ignore-groups-apply (full-join-dfs _ (ungroup df2) by cmp?) df1))
 
 ; pad any missing data that isn't matched in any column in df2 with #f
 (define (join-no-matches df1 df2-series)

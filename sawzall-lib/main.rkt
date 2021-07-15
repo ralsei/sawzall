@@ -4,8 +4,10 @@
          "constructors.rkt"
          "create.rkt"
          "display.rkt"
+         "grouped-df.rkt"
          "grouping.rkt"
          "helpers.rkt"
+         "missing-values.rkt"
          "pivot.rkt"
          "rename.rkt"
          "reorder.rkt"
@@ -22,5 +24,6 @@
          left-join right-join inner-join full-join
          rename
          pivot-longer pivot-wider
+         replace-na
          show introspect
          column-df row-df)

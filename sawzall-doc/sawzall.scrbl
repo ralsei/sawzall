@@ -386,6 +386,9 @@ This join creates a column in its result that is a list of other values.
   the comparator should return false). Otherwise, @racket[group-with] and other operations involving
   binary search will behave unexpectedly.
 
+  Note that reordering ensures that the first @racket[column-spec] is truly sorted. The subsequent
+  @racket[column-spec]s are used to break the ties (i.e. two values are @racket[equal?]).
+
   This operation ignores grouping by default, and instead sorts the entire data-frame. To sort by group,
   use @racket[#:in-groups? #t].
 

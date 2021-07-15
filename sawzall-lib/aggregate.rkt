@@ -20,9 +20,8 @@
 
 ; after already having split the data-frame up, aggregate the results
 (define (aggregate-already-split df retain proc)
-  (define internal-df (sub-data-frame-delegate-frame df))
   (match-define (column-proc new-cols binders procs) proc)
-  (define empty-df? (= (df-row-count internal-df) 0))
+  (define empty-df? (sub-df-empty? df))
 
   (define return-df (make-data-frame))
   (define retain-series

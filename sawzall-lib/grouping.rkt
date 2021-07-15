@@ -25,10 +25,11 @@
 ;; and only using `grp2` to break ties, etc for others.
 ;;
 ;; TODO: this should support something other than `orderable<?`. how do we want
-;; to specify that?
-;; XXX: inefficient. most time in `sort-with-groups` is spent here
+;;       to specify that?
+;; XXX: inefficient. most time is spent here.
+;;      it would be nice if we didn't have to sort, but we probably do
 (define (sort-with-groups df grps)
-  (reorder-df df (map (cons _ orderable<?) (reverse grps))))
+  (reorder-df df (map (cons _ orderable<?) grps)))
 
 ;;;; constructing grouped data frames
 (define (group-with df . groups)
@@ -92,4 +93,7 @@
     (cond [(grouped-data-frame? df) (grouped-data-frame-groups df)]
           [else null]))
   (define res (if pass-groups? (fn real-df groups) (fn real-df)))
-  ((if regroup? (apply group-with _ (reverse groups)) (λ (x) x)) res))
+  ((if (and regroup? (grouped-data-frame? df))
+       (apply group-with _ (reverse groups))
+       (λ (x) x))
+   res))

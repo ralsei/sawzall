@@ -3,6 +3,7 @@
          fancy-app
          racket/contract
          "helpers.rkt"
+         "grouped-df.rkt"
          "grouping.rkt"
          "reorder-df.rkt")
 (provide (contract-out [by-vector (-> vector? (-> any/c any/c boolean?))]
@@ -19,8 +20,16 @@
       (if (pair? v)
           v
           (cons v orderable<?))))
-  ((if in-groups? group-map ignore-grouping)
-   (reorder-df _ pairs) df))
+
+  (define (run-reorder-df maybe-sub-df)
+    (define real-df
+      (cond [(sub-data-frame? maybe-sub-df)
+             ;; truncate and turn into a regular data-frame
+             (df-dumb-copy/sub maybe-sub-df)]
+            [else maybe-sub-df]))
+    (reorder-df real-df pairs))
+
+  ((if in-groups? grouped-df-apply ignore-groups-apply) run-reorder-df df))
 
 (define (by-vector vec)
   (define hsh

@@ -7,6 +7,8 @@
          in-data-frame/sub
          in-data-frame/list/sub
          df-dumb-copy/sub
+         sub-df-empty?
+         df-ref/sub
          df-with-ivl
 
          (contract-out
@@ -34,6 +36,12 @@
   (match-define (sub-data-frame df (ivl beg end)) dfl)
   (apply in-data-frame/list df #:start beg #:stop end series))
 
+(define (df-ref/sub dfl idx series)
+  (match-define (sub-data-frame df (ivl beg end)) dfl)
+  (when (or (< idx beg) (>= idx end))
+    (error 'df-ref/sub "attempted to index out of subframe"))
+  (df-ref df (+ beg idx) series))
+
 (define (df-dumb-copy/sub dfl)
   (match-define (sub-data-frame df (ivl beg end)) dfl)
   (define return-df (make-data-frame))
@@ -41,6 +49,10 @@
     (df-add-series! return-df
                     (make-series s #:data (df-select df s #:start beg #:stop end))))
   return-df)
+
+(define (sub-df-empty? dfl)
+  (match-define (sub-data-frame _ (ivl beg end)) dfl)
+  (= (- end beg) 0))
 
 ;; add an interval to a data-frame, or alternatively add an interval that comprises
 ;; the entire df

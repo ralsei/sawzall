@@ -3,6 +3,7 @@
          fancy-app
          racket/sequence
          "helpers.rkt"
+         "grouped-df.rkt"
          "grouping.rkt")
 (provide replace-na)
 
@@ -14,19 +15,21 @@
         val)))
 
 (define (replace-na df . args)
-  (group-map (replace-na-df _ args) df))
+  (grouped-df-apply (replace-na-df _ args) df))
 
 (define (replace-na-df df args)
   (when (not (even? (length args)))
     (error 'replace-na "column specified with nothing to replace to"))
 
-  (define return-df (df-shallow-copy df))
+  (define internal-df (sub-data-frame-delegate-frame df))
+
+  (define return-df (df-dumb-copy/sub df))
   (for ([clause (in-slice 2 (in-list args))])
     (define col (car clause))
     (define to (cadr clause))
 
     (df-del-series! return-df col)
     (df-add-series! return-df
-                    (make-series col #:data (vector-replace (df-select df col)
-                                                            (df-na-value df col) to))))
+                    (make-series col #:data (vector-replace (df-select/sub df col)
+                                                            (df-na-value internal-df col) to))))
   return-df)

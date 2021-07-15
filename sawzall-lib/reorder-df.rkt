@@ -1,26 +1,36 @@
 #lang racket/base
 (require data-frame
          fancy-app
+         racket/list
          racket/vector
          "helpers.rkt")
 (provide reorder-df)
 
 (define (reorder-df df pairs)
-  (for/fold ([d df])
-            ([p (in-list pairs)])
-    (reorder-once d (car p) (cdr p))))
+  (define row-count (df-row-count df))
 
-; TODO: figure out df-set-sorted! here, for optimization's sake
-(define (reorder-once df col cmp?)
+  (define index-vector (build-vector row-count (λ (x) x)))
+  (for ([p (in-list (reverse pairs))])
+    (define col (car p))
+    (define cmp? (cdr p))
+
+    ;; reorder with respect to the previous sorting
+    (define data (df-select df col))
+    ;; (vector-reorder! data index-vector)
+    (vector-sort! index-vector cmp? #:key (vector-ref data _)))
+
+  ;; this is non-deterministic, but since we define it here, we can use it as a commonality
+  ;; to zip the vectors later
+  (define series (df-series-names df))
+  (define reordered-vecs
+    (for/vector ([col (in-list series)])
+      (define data (df-select df col))
+      (vector-reorder! data index-vector)
+      data))
+
   (define return-df (make-data-frame))
-  (define col-data (df-select df col))
-  (define indices
-    (vector-sort (build-vector (vector-length col-data) (λ (x) x))
-                 cmp? #:key (vector-ref col-data _)))
+  (for ([name (in-list series)]
+        [data (in-vector reordered-vecs)])
+    (df-add-series! return-df (make-series name #:data data)))
 
-  (for ([col (in-list (df-series-names df))])
-    (df-add-series! return-df
-                    (make-series col #:data (vector-reorder (df-select df col) indices))))
-  (when (not (df-has-na? return-df col))
-    (df-set-sorted! return-df col cmp?))
   return-df)
