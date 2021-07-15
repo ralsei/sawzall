@@ -5,6 +5,7 @@
          racket/vector
          "../sawzall-lib/aggregate.rkt"
          "../sawzall-lib/create.rkt"
+         "../sawzall-lib/display.rkt"
          "../sawzall-lib/grouping.rkt")
 
 (define (v/ vec c) (vector-map (λ (v) (/ v c)) vec))
@@ -23,6 +24,7 @@
       (create [freq ([N : vector]) (v/ N (sum N))]
               [pct (freq) (round (* freq 100))])
       ungroup))
+(show rel-by-region #:all? #t)
 
 ;; p <- ggplot(rel_by_region, aes(x = religion, y = pct, fill = religion))
 ;; p + geom_col(position = "dodge2") +

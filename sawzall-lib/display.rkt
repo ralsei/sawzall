@@ -4,6 +4,7 @@
          text-table
          racket/contract/base
          racket/list
+         "grouped-df.rkt"
          "grouping.rkt")
 (provide (contract-out [show (->* ((or/c data-frame? grouped-data-frame?))
                                   (#:all? boolean?)
@@ -16,7 +17,7 @@
 (define *show-cols-default* 6)
 
 (define (show df #:all? [all? #f])
-  (void (ignore-grouping (show-internal all?) df #:pass-groups? #t #:regroup? #f)))
+  (void (ignore-groups-apply (show-internal all?) df #:pass-groups? #t #:regroup? #f)))
 
 (define ((show-internal all?) df grps)
   (define all-series (df-series-names df))

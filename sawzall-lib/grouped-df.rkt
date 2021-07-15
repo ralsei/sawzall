@@ -6,6 +6,7 @@
          df-select/sub
          in-data-frame/sub
          in-data-frame/list/sub
+         df-dumb-copy/sub
          df-with-ivl
 
          (contract-out
@@ -32,6 +33,14 @@
 (define (in-data-frame/list/sub dfl . series)
   (match-define (sub-data-frame df (ivl beg end)) dfl)
   (apply in-data-frame/list df #:start beg #:stop end series))
+
+(define (df-dumb-copy/sub dfl)
+  (match-define (sub-data-frame df (ivl beg end)) dfl)
+  (define return-df (make-data-frame))
+  (for ([s (in-list (df-series-names df))])
+    (df-add-series! return-df
+                    (make-series s #:data (df-select df s #:start beg #:stop end))))
+  return-df)
 
 ;; add an interval to a data-frame, or alternatively add an interval that comprises
 ;; the entire df

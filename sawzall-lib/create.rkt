@@ -20,9 +20,7 @@
 
 (define (create-on-df df proc)
   (match-define (column-proc new-cols binders procs) proc)
-  (match-define (sub-data-frame internal-df (ivl beg end)) df)
-
-  (define return-df (df-shallow-copy internal-df))
+  (define return-df (df-dumb-copy/sub df))
 
   ; we have to support sequential saw-λ
   (for ([col-name (in-list new-cols)]
@@ -36,16 +34,16 @@
           to-apply
           (curry vector-map to-apply)))
 
-    (define len (df-row-count (sub-data-frame-delegate-frame df)))
+    (define len (df-row-count return-df))
     (define args
       (if all-vector?
-          (map (compose (df-select/sub return-df _) car) binder)
+          (map (compose (df-select return-df _) car) binder)
           (for/list ([binding (in-list binder)])
             (define var (car binding))
             (define ty (cdr binding))
             (if (eq? ty 'vector)
-                (make-vector len (df-select/sub return-df var))
-                (df-select/sub return-df var)))))
+                (make-vector len (df-select return-df var))
+                (df-select return-df var)))))
 
     (df-add-series!
      return-df

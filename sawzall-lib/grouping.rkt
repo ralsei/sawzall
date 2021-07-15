@@ -50,7 +50,7 @@
           (cons (build-group-vector grp) vecs)
           (cons (build-group-vector grp (first vecs)) vecs))))
 
-  (grouped-data-frame df (reverse groups) grp-vecs))
+  (grouped-data-frame sorted (reverse groups) grp-vecs))
 
 (define (ungroup-once gdf)
   (cond [(data-frame? gdf) gdf]
@@ -79,9 +79,17 @@
                 (apply combine
                        (for/list ([i (in-vector (first grp-idxes))])
                          (call i)))
-                grps)]))
+                (reverse grps))]))
 
-;; applies a function (sub-data-frame? -> data-frame?) to a grouped data frame,
+;; applies a function (data-frame? -> data-frame?) to a grouped data frame,
 ;; ignoring its grouping
-(define (ignore-groups-apply fn df #:pass-groups? [pass-groups? #f])
-  3)
+(define (ignore-groups-apply fn df #:pass-groups? [pass-groups? #f] #:regroup? [regroup? #t])
+  (define real-df
+    (cond [(grouped-data-frame? df) (grouped-data-frame-delegate-frame df)]
+          [(sub-data-frame? df) (sub-data-frame-delegate-frame df)]
+          [(data-frame? df) df]))
+  (define groups
+    (cond [(grouped-data-frame? df) (grouped-data-frame-groups df)]
+          [else null]))
+  (define res (if pass-groups? (fn real-df groups) (fn real-df)))
+  ((if regroup? (apply group-with _ (reverse groups)) (λ (x) x)) res))
