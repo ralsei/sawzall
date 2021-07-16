@@ -10,7 +10,8 @@
 ; - they have the same row count
 ; - they have the same data in each series (by equal?)
 (define (data-frame~=? df1 df2)
-  (and (apply df-contains? df1 (df-series-names df2))
+  (and df1 df2
+       (apply df-contains? df1 (df-series-names df2))
        (apply df-contains? df2 (df-series-names df1))
 
        (= (df-row-count df1) (df-row-count df2))
@@ -28,10 +29,10 @@
         (cmp? tortoise hare))))
 
 (define-check (check-csv df csv-file)
-  (define saved (df-read/csv csv-file))
+  (define saved (and (file-exists? csv-file) (df-read/csv csv-file)))
   (unless (data-frame~=? df saved)
     (define-values (base name must-be-dir?) (split-path csv-file))
-    (define data-file (build-path base (string-append "new" (path->string name))))
+    (define data-file (build-path base (string-append "new_" (path->string name))))
     (df-write/csv df data-file)
     (fail-check (format "csv not the same as df, new set written to ~a" data-file))))
 
@@ -40,13 +41,13 @@
 
   (define df1
     (for*/data-frame (al bl)
-                     ([as (in-range 6)]
-                      [bs (in-range 8)])
+      ([as (in-range 6)]
+       [bs (in-range 8)])
       (values as bs)))
   (define df2
     (for*/data-frame (bl al)
-                     ([as (in-range 6)]
-                      [bs (in-range 8)])
+      ([as (in-range 6)]
+       [bs (in-range 8)])
       (values bs as)))
   (check data-frame~=? df1 df2)
   (check df-sorted-by? df1 "al")

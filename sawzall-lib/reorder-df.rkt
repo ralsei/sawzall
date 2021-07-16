@@ -1,7 +1,6 @@
 #lang racket/base
 (require data-frame
          fancy-app
-         racket/list
          racket/vector
          "helpers.rkt")
 (provide reorder-df)
@@ -14,9 +13,7 @@
     (define col (car p))
     (define cmp? (cdr p))
 
-    ;; reorder with respect to the previous sorting
     (define data (df-select df col))
-    ;; (vector-reorder! data index-vector)
     (vector-sort! index-vector cmp? #:key (vector-ref data _)))
 
   ;; this is non-deterministic, but since we define it here, we can use it as a commonality

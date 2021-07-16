@@ -23,3 +23,6 @@
 (df-add-series! ball2 (make-series "last" #:data (vector "son" "ert" "man" "ert")))
 (df-add-series! ball2 (make-series "game" #:data (vector 1 1 1 2)))
 (df-add-series! ball2 (make-series "goals" #:data (vector 0 1 2 3)))
+
+(define gss-sm (df-read/csv "data/gss_sm.csv"))
+(define organdata (df-read/csv "data/organdata.csv"))
