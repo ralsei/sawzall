@@ -117,7 +117,7 @@ it into a grouped one, in which operations are performed by group.
   ]
 }
 
-@defproc[(ungroup-all [df (or/c data-frame? grouped-data-frame?)]) data-frame?]{
+@defproc[(ungroup [df (or/c data-frame? grouped-data-frame?)]) data-frame?]{
   Removes all levels of grouping from a grouped data frame, returning a singular data frame. In most cases,
   you'll want to do this before passing your wrangled data to some other application.
 
@@ -373,7 +373,6 @@ This join creates a column in its result that is a list of other values.
 
 @defproc[(reorder [df (or/c data-frame? grouped-data-frame?)]
                   [column-spec (or/c string? (cons/c string? (-> any/c any/c boolean?)))]
-                  [#:in-groups in-groups? boolean? #f]
                   ...)
          (or/c data-frame? grouped-data-frame?)]{
   Returns @racket[df], except sorted by a series of columns. Each @racket[column-spec] is either a column
@@ -389,17 +388,18 @@ This join creates a column in its result that is a list of other values.
   Note that reordering ensures that the first @racket[column-spec] is truly sorted. The subsequent
   @racket[column-spec]s are used to break the ties (i.e. two values are @racket[equal?]).
 
-  This operation ignores grouping by default, and instead sorts the entire data-frame. To sort by group,
-  use @racket[#:in-groups? #t].
+  This operation sorts within groups, if there are any. If you wish to sort ignoring groups, you will
+  have to use @racket[ungroup] first. This is due to the way groups are managed internally.
 
   @examples[#:eval ev
     (~> example-df
         (reorder (cons "trt" string-ci>?)
                  (cons "adult" >))
         show)
+
     (~> example-df
-        (group-with "grp")
-        (reorder (cons "adult" >) #:in-groups? #t)
+        (group-with "trt")
+        (reorder (cons "adult" >))
         show)
   ]
 }

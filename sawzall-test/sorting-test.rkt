@@ -60,13 +60,6 @@
       (reorder "obama")
       ungroup))
 
-(define-runtime-path reorder-gss-4-data "./results/reorder_gss_4.csv")
-(define reorder-gss-4
-  (~> gss-sm
-      (group-with "bigregion" "religion")
-      (reorder "obama" #:in-groups? #t)
-      ungroup))
-
 (module+ test
   (check data-frame~=? reorder-1 reorder-1-result)
   (check data-frame~=? reorder-2 reorder-2-result)
@@ -77,5 +70,4 @@
   (check-csv reorder-gss-1 reorder-gss-1-data)
   (check df-sorted-by? reorder-gss-2 "bigregion")
   (check-csv reorder-gss-2 reorder-gss-2-data)
-  (check-csv reorder-gss-3 reorder-gss-3-data)
-  (check-csv reorder-gss-4 reorder-gss-4-data))
+  (check-csv reorder-gss-3 reorder-gss-3-data))

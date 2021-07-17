@@ -1,5 +1,6 @@
 #lang racket
 (require data-frame
+         racket/runtime-path
          rackunit
          sawzall
          threading
@@ -39,15 +40,39 @@
           "bob"  "ert" 1    1
           "bob"  "ert" 2    3))
 
+;; filtering gss
+(define-runtime-path where-gss-1-data "./results/where_gss_1.csv")
+(define where-gss-1 (where gss-sm (bigregion) (string=? bigregion "Northeast")))
+
+(define-runtime-path where-gss-2-data "./results/where_gss_2.csv")
+(define where-gss-2 (where gss-sm (bigregion) (not (string=? bigregion "Midwest"))))
+
+;; filtering organdata
+(define-runtime-path where-organdata-1-data "./results/where_organdata_1.csv")
+(define where-organdata-1 (where organdata (consent_practice) (string=? consent_practice "Informed")))
+
+(define-runtime-path where-organdata-2-data "./results/where_organdata_2.csv")
+(define where-organdata-2 (where organdata (country) (char=? (string-ref country 0) #\I)))
+
 (module+ test
   ;; I think the error message data-frame provides is good enough here
   ;; But we always want to stick with this error message if we aren't rolling our own
   (check-exn
    exn:fail:data-frame?
-   (thunk (where woodland2 (non-existent) #t)))
+   (thunk (where woodland2 (non-existent site) #t)))
 
   (check data-frame~=? where-1 where-1-result)
   (check data-frame~=? where-2 where-2-result)
   (check data-frame~=? where-3 where-3-result)
   (check data-frame~=? where-4 where-4-result)
-  (check data-frame~=? where-5 where-5-result))
+  (check data-frame~=? where-5 where-5-result)
+
+  (check-csv where-gss-1 where-gss-1-data)
+  (check-true (df-contains-only? where-gss-1 "bigregion" "Northeast"))
+  (check-csv where-gss-2 where-gss-2-data)
+  (check-true (df-does-not-contain? where-gss-2 "bigregion" "Midwest"))
+
+  (check-csv where-organdata-1 where-organdata-1-data)
+  (check-true (df-contains-only? where-organdata-1 "consent_practice" "Informed"))
+  (check-csv where-organdata-2 where-organdata-2-data)
+  (check-true (df-does-not-contain? where-organdata-2 "country" "Netherlands")))

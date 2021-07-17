@@ -2,7 +2,11 @@
 (require data-frame
          rackunit
          sawzall)
-(provide data-frame~=? df-sorted-by? check-csv)
+(provide data-frame~=?
+         df-sorted-by?
+         df-contains-only?
+         df-does-not-contain?
+         check-csv)
 
 ; checks if two data-frames are "equivalent".
 ; conditions, checked sequentially:
@@ -27,6 +31,14 @@
             [hare (in-vector (df-select df by) 1)])
     (or (equal? tortoise hare)
         (cmp? tortoise hare))))
+
+(define (df-contains-only? df series value)
+  (for/and ([v (in-data-frame df series)])
+    (equal? v value)))
+
+(define (df-does-not-contain? df series value)
+  (for/and ([v (in-data-frame df series)])
+    (not (equal? v value))))
 
 (define-check (check-csv df csv-file)
   (define saved (and (file-exists? csv-file) (df-read/csv csv-file)))

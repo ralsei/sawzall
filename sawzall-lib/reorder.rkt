@@ -7,14 +7,12 @@
          "grouping.rkt"
          "reorder-df.rkt")
 (provide (contract-out [by-vector (-> vector? (-> any/c any/c boolean?))]
-                       [reorder (->* ((or/c data-frame? grouped-data-frame?))
-                                     (#:in-groups? boolean?)
-                                     #:rest (non-empty-listof
-                                             (or/c string?
-                                                   (cons/c string? (-> any/c any/c boolean?))))
-                                     (or/c data-frame? grouped-data-frame?))]))
+                       [reorder (-> (or/c data-frame? grouped-data-frame?)
+                                    (or/c string?
+                                          (cons/c string? (-> any/c any/c boolean?))) ...
+                                    (or/c data-frame? grouped-data-frame?))]))
 
-(define (reorder df #:in-groups? [in-groups? #f] . to-sort)
+(define (reorder df . to-sort)
   (define pairs
     (for/list ([v (in-list to-sort)])
       (if (pair? v)
@@ -29,7 +27,7 @@
             [else maybe-sub-df]))
     (reorder-df real-df pairs))
 
-  ((if in-groups? grouped-df-apply ignore-groups-apply) run-reorder-df df))
+  (grouped-df-apply run-reorder-df df))
 
 (define (by-vector vec)
   (define hsh
