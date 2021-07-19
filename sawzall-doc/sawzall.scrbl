@@ -12,9 +12,6 @@
 
 @defmodule[sawzall]
 
-@bold{TODO:} needs examples, hard to find ones that make sense...?
-current examples pilfered from Chez
-
 Sawzall is a grammar for manipulating data, and provides a set of primitives that allow solving
 common data-manipulation problems in a style similar to spreadsheets. Sawzall uses the
 @racketmodname[data-frame] library as its primary object of input and output, and is designed to
@@ -356,18 +353,6 @@ These joins combine variables from the two input data-frames.
         show)
   ]
 }
-
-@subsection{Filtering joins}
-
-These joins keep cases solely from the left-hand (first argument) data-frame.
-
-@bold{Unimplemented.}
-
-@subsection{Nesting join}
-
-This join creates a column in its result that is a list of other values.
-
-@bold{Unimplemented.}
 
 @section[#:tag "reorder"]{Sorting}
 

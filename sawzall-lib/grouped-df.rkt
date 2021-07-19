@@ -38,8 +38,6 @@
 
 (define (df-ref/sub dfl idx series)
   (match-define (sub-data-frame df (ivl beg end)) dfl)
-  (when (or (< idx beg) (>= idx end))
-    (error 'df-ref/sub "attempted to index out of subframe"))
   (df-ref df (+ beg idx) series))
 
 (define (df-dumb-copy/sub dfl)

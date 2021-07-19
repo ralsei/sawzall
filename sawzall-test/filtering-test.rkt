@@ -40,6 +40,17 @@
           "bob"  "ert" 1    1
           "bob"  "ert" 2    3))
 
+;; grouping and filtering
+(define where-6
+  (~> ball1
+      (group-with "last")
+      (where (first) (string=? first "sam"))
+      ungroup))
+(define where-6-result
+  (row-df [first last  age]
+          "sam"  "jam" 30
+          "sam"  "son" 10))
+
 ;; filtering gss
 (define-runtime-path where-gss-1-data "./results/where_gss_1.csv")
 (define where-gss-1 (where gss-sm (bigregion) (string=? bigregion "Northeast")))
@@ -47,12 +58,26 @@
 (define-runtime-path where-gss-2-data "./results/where_gss_2.csv")
 (define where-gss-2 (where gss-sm (bigregion) (not (string=? bigregion "Midwest"))))
 
+(define-runtime-path where-gss-3-data "./results/where_gss_3.csv")
+(define where-gss-3
+  (~> gss-sm
+      (group-with "bigregion" "religion")
+      (where (bigregion) (string=? bigregion "South"))
+      ungroup))
+
 ;; filtering organdata
 (define-runtime-path where-organdata-1-data "./results/where_organdata_1.csv")
 (define where-organdata-1 (where organdata (consent_practice) (string=? consent_practice "Informed")))
 
 (define-runtime-path where-organdata-2-data "./results/where_organdata_2.csv")
 (define where-organdata-2 (where organdata (country) (char=? (string-ref country 0) #\I)))
+
+(define-runtime-path where-organdata-3-data "./results/where_organdata_3.csv")
+(define where-organdata-3
+  (~> organdata
+      (group-with "country")
+      (where (consent_practice) (string=? consent_practice "Presumed"))
+      ungroup))
 
 (module+ test
   ;; I think the error message data-frame provides is good enough here
@@ -66,13 +91,18 @@
   (check data-frame~=? where-3 where-3-result)
   (check data-frame~=? where-4 where-4-result)
   (check data-frame~=? where-5 where-5-result)
+  (check data-frame~=? where-6 where-6-result)
 
   (check-csv where-gss-1 where-gss-1-data)
   (check-true (df-contains-only? where-gss-1 "bigregion" "Northeast"))
   (check-csv where-gss-2 where-gss-2-data)
   (check-true (df-does-not-contain? where-gss-2 "bigregion" "Midwest"))
+  (check-csv where-gss-3 where-gss-3-data)
+  (check-true (df-contains-only? where-gss-3 "bigregion" "South"))
 
   (check-csv where-organdata-1 where-organdata-1-data)
   (check-true (df-contains-only? where-organdata-1 "consent_practice" "Informed"))
   (check-csv where-organdata-2 where-organdata-2-data)
-  (check-true (df-does-not-contain? where-organdata-2 "country" "Netherlands")))
+  (check-true (df-does-not-contain? where-organdata-2 "country" "Netherlands"))
+  (check-csv where-organdata-3 where-organdata-3-data)
+  (check-true (df-contains-only? where-organdata-3 "consent_practice" "Presumed")))
