@@ -4,7 +4,7 @@
 (define scribblings '(("sawzall.scrbl" ())))
 
 (define pkg-desc "Documentation for Sawzall")
-(define version "0.1")
+(define version "1.0")
 (define deps '("base"))
 (define build-deps '("data-frame"
                      "racket-doc"
