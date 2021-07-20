@@ -7,3 +7,8 @@
 
 (define pkg-desc "Tests for Sawzall")
 (define version "1.0")
+(define deps '("base"
+               "data-frame"
+               "rackunit-lib"
+               "sawzall-lib"
+               "threading-lib"))
