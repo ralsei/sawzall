@@ -1,5 +1,5 @@
 #lang racket
-(require data-frame)
+(require data-frame sawzall)
 (provide (all-defined-out))
 
 (define woodland1 (make-data-frame))
@@ -23,6 +23,12 @@
 (df-add-series! ball2 (make-series "last" #:data (vector "son" "ert" "man" "ert")))
 (df-add-series! ball2 (make-series "game" #:data (vector 1 1 1 2)))
 (df-add-series! ball2 (make-series "goals" #:data (vector 0 1 2 3)))
+
+(define docs1
+  (column-df [grp #("a" "a" "b" "b" "b")]
+             [trt #("a" "b" "a" "b" "b")]
+             [adult #(1 2 3 4 5)]
+             [juv #(10 20 30 40 50)]))
 
 (define gss-sm (df-read/csv "data/gss_sm.csv"))
 (define organdata (df-read/csv "data/organdata.csv"))

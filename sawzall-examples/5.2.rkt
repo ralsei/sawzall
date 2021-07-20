@@ -29,11 +29,11 @@
 ;; ;;     guides(fill = FALSE) +
 ;; ;;     coord_flip() +
 ;; ;;     facet_grid(~ bigregion)
-;; (graph #:data rel-by-region
-;;        #:mapping (aes #:x "religion" #:y "pct" #:facet "bigregion")
-;;        #:facet-wrap 2
-;;        #:title "Religious preferences by region"
-;;        #:x-label "Religion" #:y-label "Percent"
-;;        #:height 800
-;;        #:width 800
-;;        (col))
+(graph #:data rel-by-region
+       #:mapping (aes #:x "religion" #:y "pct" #:facet "bigregion")
+       #:facet-wrap 2
+       #:title "Religious preferences by region"
+       #:x-label "Religion" #:y-label "Percent"
+       #:height 800
+       #:width 800
+       (col))
