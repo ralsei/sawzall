@@ -10,4 +10,5 @@
                      "racket-doc"
                      "sawzall-lib"
                      "scribble-lib"
-                     "threading-lib"))
+                     "threading-lib"
+                     "threading-doc"))
