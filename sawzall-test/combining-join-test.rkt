@@ -61,7 +61,6 @@
 
 ;; join by multiple variables
 (define left-join-5 (left-join ball1 ball2 "first" "last"))
-(define left-join-5a (left-join ball1 ball2))
 (define left-join-5-result
   (row-df [first last  age game goals]
           "bob"  "ert" 20  1    1
@@ -123,7 +122,6 @@
   (check data-frame~=? left-join-3 left-join-3-result)
   (check data-frame~=? left-join-4 left-join-4-result)
   (check data-frame~=? left-join-5 left-join-5-result)
-  (check data-frame~=? left-join-5a left-join-5-result)
   (check data-frame~=? left-join-6 left-join-6-result)
   (check data-frame~=? left-join-6a left-join-6-result)
 
