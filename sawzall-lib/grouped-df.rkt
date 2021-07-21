@@ -8,6 +8,7 @@
          in-data-frame/list/sub
          df-dumb-copy/sub
          sub-df-empty?
+         df-row-count/sub
          df-ref/sub
          df-with-ivl
 
@@ -51,6 +52,10 @@
 (define (sub-df-empty? dfl)
   (match-define (sub-data-frame _ (ivl beg end)) dfl)
   (= (- end beg) 0))
+
+(define (df-row-count/sub dfl)
+  (define iv (sub-data-frame-ivl dfl))
+  (- (ivl-end iv) (ivl-beg iv)))
 
 ;; add an interval to a data-frame, or alternatively add an interval that comprises
 ;; the entire df

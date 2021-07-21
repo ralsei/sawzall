@@ -251,7 +251,9 @@ grouped data frame, so you must use @racket[map] to do sequential groups or perf
 
 @section[#:tag "join"]{Joining}
 
-These operations join two tables in varying ways, along some common column (the "spine").
+These operations join two tables in varying ways, along some common column or set of columns
+(the "spine"). When multiple columns are specified, the data-set is joined along their
+combinations. When none are specified, the spine defaults to all shared variables.
 
 All joining operations ignore grouping. The grouping of the first argument will be preserved,
 but grouping does not play a factor in how the operation performs (compared to a plain table).
@@ -277,20 +279,19 @@ These joins combine variables from the two input data-frames.
 
 @defproc[(left-join [df1 (or/c data-frame? grouped-data-frame?)]
                     [df2 (or/c data-frame? grouped-data-frame?)]
-                    [by string?]
-                    [#:cmp? cmp? (-> any/c any/c boolean?) orderable<?])
-         (or/c data-frame? grouped-data-frame/?)]{
+                    [by string?] ...)
+         (or/c data-frame? grouped-data-frame?)]{
   Returns a new data-frame, with all rows from @racket[df1], and all columns from @racket[df1]
-  and @racket[df2]. Rows are compared by the value of the variable @racket[by].
+  and @racket[df2]. Rows are compared by the value of the variable(s) @racket[by].
 
-  Rows in @racket[df1] that have no corresponding value of @racket[by] in @racket[df2] will have
+  If @racket[by] is not specified, it defaults to all the common columns in @racket[df1] and
+  @racket[df2], in an unspecified order.
+
+  Rows in @racket[df1] that have no corresponding value(s) of @racket[by] in @racket[df2] will have
   NA values in the new columns.
 
   Rows in @racket[df1] that have multiple corresponding values of @racket[by] in @racket[df2]
   will have all combinations of the @racket[df1] and @racket[df2] values in the result.
-
-  @racket[cmp?] is used to sort the two data-frames before joining. By default, this is
-  @racket[orderable<?], which is in essence a "best guess" comparator.
 
   @examples[#:eval ev
     (~> woodland1
@@ -304,28 +305,30 @@ These joins combine variables from the two input data-frames.
 
 @defproc[(right-join [df1 (or/c data-frame? grouped-data-frame?)]
                      [df2 (or/c data-frame? grouped-data-frame?)]
-                     [by string?]
-                     [#:cmp? cmp? (-> any/c any/c boolean?) orderable<?])
+                     [by string?] ...)
          (or/c data-frame? grouped-data-frame?)]{
   Returns a new data-frame, with all rows from @racket[df2], and all columns from @racket[df1]
-  and @racket[df2]. Rows are compared by the value of the variable @racket[by].
+  and @racket[df2]. Rows are compared by the value of the variable(s) @racket[by].
+
+  If @racket[by] is not specified, it defaults to all the common columns in @racket[df1] and
+  @racket[df2], in an unspecified order.
 
   This is equivalent to @racket[(left-join df2 df1 by #:cmp? cmp?)].
 }
 
 @defproc[(inner-join [df1 (or/c data-frame? grouped-data-frame?)]
                      [df2 (or/c data-frame? grouped-data-frame?)]
-                     [by string?]
-                     [#:cmp? cmp? (-> any/c any/c boolean? orderable<?)])
+                     [by string?] ...)
          (or/c data-frame? grouped-data-frame?)]{
   Returns a new data-frame, with all rows from @racket[df1] with matching rows in @racket[df2],
   and columns of both @racket[df1] and @racket[df2]. Rows are compared by the value of the variable
   @racket[by].
 
+  If @racket[by] is not specified, it defaults to all the common columns in @racket[df1] and
+  @racket[df2], in an unspecified order.
+
   If there are multiple matches between the rows of @racket[df1] and @racket[df2], all combinations
   of the matches are returned.
-
-  @racket[cmp?] is used to sort the two data-frames before joining.
 
   @examples[#:eval ev
     (~> woodland1
@@ -336,16 +339,16 @@ These joins combine variables from the two input data-frames.
 
 @defproc[(full-join [df1 (or/c data-frame? grouped-data-frame?)]
                     [df2 (or/c data-frame? grouped-data-frame?)]
-                    [by string?]
-                    [#:cmp? cmp? (-> any/c any/c boolean? orderable<?)])
+                    [by string?] ...)
          (or/c data-frame? grouped-data-frame?)]{
   Returns a new data-frame, with all rows and columns from @racket[df1] and @racket[df2]. Rows are
   compared by the value of the variable @racket[by].
 
+  If @racket[by] is not specified, it defaults to all the common columns in @racket[df1] and
+  @racket[df2], in an unspecified order.
+
   If there is a row in @racket[df1] that does not have a value in @racket[df2], or vice versa, they
   will have NA values in the new columns.
-
-  @racket[cmp?] is used to sort the two data-frames before joining.
 
   @examples[#:eval ev
     (~> woodland2

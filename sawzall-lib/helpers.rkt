@@ -4,7 +4,13 @@
          racket/match
          racket/set
          "grouped-df.rkt")
-(provide possibilities vector-reorder vector-reorder! orderable? df-na-value
+(provide possibilities
+         vector-reorder
+         vector-reorder!
+         df-na-value
+         shared-series
+         lexicographic-vector<?
+         orderable?
          (contract-out [orderable<? (-> orderable? orderable? boolean?)]))
 
 ; determines the NA value in a given df series
@@ -55,6 +61,17 @@
         (set! src-idx (vector-ref indices src-idx))
         (loop)))
     (vector-swap! vec src-idx tar-idx)))
+
+; shared series between data-frames
+(define (shared-series dfs)
+  (apply set-intersect (map df-series-names dfs)))
+
+; lexicographic ordering for vectors
+(define (lexicographic-vector<? a b)
+  (for/or ([va (in-vector a)]
+           [vb (in-vector b)]
+           #:break (not (or (orderable<? va vb) (equal? va vb)))) ; "greater than"
+    (orderable<? va vb)))
 
 ; inferred generic comparator
 (define (orderable-major v)

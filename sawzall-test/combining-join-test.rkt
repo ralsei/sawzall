@@ -59,6 +59,26 @@
           2    "x3"  "y3"
           3    "x4"  "y4"))
 
+;; join by multiple variables
+(define left-join-5 (left-join ball1 ball2 "first" "last"))
+(define left-join-5a (left-join ball1 ball2))
+(define left-join-5-result
+  (row-df [first last  age game goals]
+          "bob"  "ert" 20  1    1
+          "bob"  "ert" 20  2    3
+          "dan"  "man" 40  1    2
+          "sam"  "jam" 30  #f   #f
+          "sam"  "son" 10  1    0))
+
+(define left-join-6 (left-join ball2 ball1 "first" "last"))
+(define left-join-6a (left-join ball2 ball1))
+(define left-join-6-result
+  (row-df [first last  game goals age]
+          "bob"  "ert" 1    1     20
+          "bob"  "ert" 2    3     20
+          "dan"  "man" 1    2     40
+          "sam"  "son" 1    0     10))
+
 (define right-join-1 (right-join woodland2 woodland1 "site"))
 (define right-join-1-result left-join-1-result)
 
@@ -102,6 +122,10 @@
   (check data-frame~=? left-join-2 left-join-2-result)
   (check data-frame~=? left-join-3 left-join-3-result)
   (check data-frame~=? left-join-4 left-join-4-result)
+  (check data-frame~=? left-join-5 left-join-5-result)
+  (check data-frame~=? left-join-5a left-join-5-result)
+  (check data-frame~=? left-join-6 left-join-6-result)
+  (check data-frame~=? left-join-6a left-join-6-result)
 
   (check data-frame~=? right-join-1 right-join-1-result)
   (check data-frame~=? right-join-2 right-join-2-result)

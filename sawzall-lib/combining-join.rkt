@@ -2,64 +2,64 @@
 (require data-frame
          fancy-app
          racket/contract/base
+         racket/list
          "helpers.rkt"
          "grouped-df.rkt"
          "grouping.rkt"
-         "reorder.rkt"
          "split.rkt")
-(provide (contract-out [left-join (->* ((or/c data-frame? grouped-data-frame?)
-                                        (or/c data-frame? grouped-data-frame?)
-                                        string?)
-                                       (#:cmp? (-> any/c any/c boolean?))
+(provide (contract-out [left-join (-> (or/c data-frame? grouped-data-frame?)
+                                      (or/c data-frame? grouped-data-frame?)
+                                      string? ...
+                                      (or/c data-frame? grouped-data-frame?))]
+                       [right-join (-> (or/c data-frame? grouped-data-frame?)
+                                       (or/c data-frame? grouped-data-frame?)
+                                       string? ...
                                        (or/c data-frame? grouped-data-frame?))]
-                       [right-join (->* ((or/c data-frame? grouped-data-frame?)
-                                         (or/c data-frame? grouped-data-frame?)
-                                         string?)
-                                        (#:cmp? (-> any/c any/c boolean?))
-                                        (or/c data-frame? grouped-data-frame?))]
-                       [inner-join (->* ((or/c data-frame? grouped-data-frame?)
-                                         (or/c data-frame? grouped-data-frame?)
-                                         string?)
-                                        (#:cmp? (-> any/c any/c boolean?))
-                                        (or/c data-frame? grouped-data-frame?))]
-                       [full-join (->* ((or/c data-frame? grouped-data-frame?)
-                                        (or/c data-frame? grouped-data-frame?)
-                                        string?)
-                                       (#:cmp? (-> any/c any/c boolean?))
-                                       (or/c data-frame? grouped-data-frame?))]))
+                       [inner-join (-> (or/c data-frame? grouped-data-frame?)
+                                       (or/c data-frame? grouped-data-frame?)
+                                       string? ...
+                                       (or/c data-frame? grouped-data-frame?))]
+                       [full-join (-> (or/c data-frame? grouped-data-frame?)
+                                      (or/c data-frame? grouped-data-frame?)
+                                      string? ...
+                                      (or/c data-frame? grouped-data-frame?))]))
 
-(define (left-join df1 df2 by #:cmp? [cmp? orderable<?])
-  (ignore-groups-apply (left-join-dfs _ (ungroup df2) by cmp?) df1))
-(define (right-join df1 df2 by #:cmp? [cmp? orderable<?])
-  (ignore-groups-apply (left-join-dfs (ungroup df2) _ by cmp?) df1))
-(define (inner-join df1 df2 by #:cmp? [cmp? orderable<?])
-  (ignore-groups-apply (inner-join-dfs _ (ungroup df2) by cmp?) df1))
-(define (full-join df1 df2 by #:cmp? [cmp? orderable<?])
-  (ignore-groups-apply (full-join-dfs _ (ungroup df2) by cmp?) df1))
+(define (left-join df1 df2 . by)
+  (ignore-groups-apply (left-join-dfs _ (ungroup df2) by) df1))
+(define (right-join df1 df2 . by)
+  (ignore-groups-apply (left-join-dfs (ungroup df2) _ by) df1))
+(define (inner-join df1 df2 . by)
+  (ignore-groups-apply (inner-join-dfs _ (ungroup df2) by) df1))
+(define (full-join df1 df2 . by)
+  (ignore-groups-apply (full-join-dfs _ (ungroup df2) by) df1))
 
 ; pad any missing data that isn't matched in any column in df2 with #f
 (define (join-no-matches df1 df2-series)
+  (define df1-int (sub-data-frame-delegate-frame df1))
   (define return-df (make-data-frame))
-  (define df1-size (df-row-count df1))
+  (define df1-size (df-row-count/sub df1))
 
   (for ([name (in-list df2-series)])
     (df-add-series! return-df (make-series name #:data (make-vector df1-size #f))))
-  (for ([name (in-list (df-series-names df1))])
-    (df-add-series! return-df (make-series name #:data (df-select df1 name))))
+  (for ([name (in-list (df-series-names df1-int))])
+    (df-add-series! return-df (make-series name #:data (df-select/sub df1 name))))
 
   return-df)
 
 ; combine on all shared matches
 (define (join-matches df1 df2 by)
+  (define df1-int (sub-data-frame-delegate-frame df1))
+  (define df2-int (sub-data-frame-delegate-frame df2))
+
   (define (permute-data series df2?)
-    (for*/vector ([df1-val (in-data-frame df1 (if df2? by series))]
-                  [df2-val (in-data-frame df2 (if df2? series by))])
+    (for*/vector ([df1-val (in-data-frame/sub df1 (if df2? (first by) series))]
+                  [df2-val (in-data-frame/sub df2 (if df2? series (first by)))])
       (if df2? df2-val df1-val)))
   
   (define return-df (make-data-frame))
-  (for ([name (in-list (df-series-names df2))])
+  (for ([name (in-list (df-series-names df2-int))])
     (df-add-series! return-df (make-series name #:data (permute-data name #t))))
-  (for ([name (in-list (df-series-names df1))])
+  (for ([name (in-list (df-series-names df1-int))])
     (df-add-series! return-df (make-series name #:data (permute-data name #f))))
 
   return-df)
@@ -75,44 +75,50 @@
 ;
 ; when df1 ends, we terminate and combine all results
 ; when the values are equal, we always call `join-matches`
-;
-; XXX: optimizations that could be done:
-; - combining data-frames is costly and requires a lot of `vector-append`. we could probably use
-; a "window"/"lens" into the data-frame and then iterate over series
-; - split-with should use binary search if the series is sorted
-(define ((combining-join on-df2-end on-lt on-else) df1 df2 by cmp?)
-  ; sort and split, to make merge work. if we don't split, we can't handle duplicate keys
-  (define df1-sorted (reorder df1 (cons by cmp?)))
-  (define df2-sorted (reorder df2 (cons by cmp?)))
+(define ((combining-join on-df2-end on-lt on-else) df1 df2 by-int)
+  (define by
+    (if (null? by-int)
+        (shared-series (list df1 df2))
+        by-int))
 
-  (define df1-split (split-with-possibility df1-sorted by))
-  (define df2-split (split-with-possibility df2-sorted by))
+  (define df1-grouped (apply group-with df1 by))
+  (define df2-grouped (apply group-with df2 by))
+  (define df1-sorted (grouped-data-frame-delegate-frame df1-grouped))
+  (define df2-sorted (grouped-data-frame-delegate-frame df2-grouped))
+  (define df1-group-ivls (first (grouped-data-frame-group-indices df1-grouped)))
+  (define df2-group-ivls (first (grouped-data-frame-group-indices df2-grouped)))
+
+  (define df1-by (get-grouped-by df1-grouped))
+  (define df2-by (get-grouped-by df2-grouped))
+
+  (define df1-len (vector-length df1-by))
+  (define df2-len (vector-length df2-by))
 
   ; the return of merge from the hit series merge sort
   (let loop ([df1-idx 0] [df2-idx 0] [dfs '()])
-    (cond [(>= df1-idx (vector-length df1-split))
+    (cond [(>= df1-idx df1-len)
            ; we've run out of vector to use, so return the final df
            (apply combine (reverse dfs))]
-          [(>= df2-idx (vector-length df2-split))
+          [(>= df2-idx df2-len)
            ; we've run out of the second vector. this varies between joins
            (loop (add1 df1-idx) df2-idx
-                 (on-df2-end (cdr (vector-ref df1-split df1-idx))
+                 (on-df2-end (df-with-ivl df1-sorted (vector-ref df1-group-ivls df1-idx))
                              (df-series-names df2)
                              dfs))]
-          [(equal? (car (vector-ref df1-split df1-idx))
-                   (car (vector-ref df2-split df2-idx)))
+          [(equal? (vector-ref df1-by df1-idx)
+                   (vector-ref df2-by df2-idx))
            ; the rows share the same key, so merge them with combining
            (loop (add1 df1-idx) (add1 df2-idx)
-                 (cons (join-matches (cdr (vector-ref df1-split df1-idx))
-                                     (cdr (vector-ref df2-split df2-idx))
+                 (cons (join-matches (df-with-ivl df1-sorted (vector-ref df1-group-ivls df1-idx))
+                                     (df-with-ivl df2-sorted (vector-ref df2-group-ivls df2-idx))
                                      by)
                        dfs))]
-          [(cmp? (car (vector-ref df1-split df1-idx))
-                 (car (vector-ref df2-split df2-idx)))
+          [(lexicographic-vector<? (vector-ref df1-by df1-idx)
+                                   (vector-ref df2-by df2-idx))
            ; df1 < df2, so keep incrementing the df1 index until they match, and
            ; update the accumulator (varies)
            (loop (add1 df1-idx) df2-idx
-                 (on-lt (cdr (vector-ref df1-split df1-idx))
+                 (on-lt (df-with-ivl df1-sorted (vector-ref df1-group-ivls df1-idx))
                         (df-series-names df2)
                         dfs))]
           [else
@@ -120,7 +126,7 @@
            ; update the accumulator (again, varies)
            (loop df1-idx (add1 df2-idx)
                  (on-else (df-series-names df1)
-                          (cdr (vector-ref df2-split df2-idx))
+                          (df-with-ivl df2-sorted (vector-ref df2-group-ivls df2-idx))
                           dfs))])))
 
 (define left-join-dfs
@@ -150,3 +156,14 @@
      (cons (join-no-matches df1 df2-names) acc))
    (λ (df1-names df2 acc)
      (cons (join-no-matches df2 df1-names) acc))))
+
+; gets what the given grouped data frame is grouped by at the top level, based on what
+; we already have grouped
+;
+; by the implementation of a grouped data frame this set is already lexicographically sorted
+(define (get-grouped-by gdf)
+  (for/vector ([iv (in-vector (first (grouped-data-frame-group-indices gdf)))])
+    (apply df-ref*
+           (grouped-data-frame-delegate-frame gdf)
+           (ivl-beg iv)
+           (reverse (grouped-data-frame-groups gdf)))))

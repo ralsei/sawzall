@@ -50,10 +50,6 @@
   (for/list ([v (in-vector (split-with-possibility df group))])
     (cdr v)))
 
-; shared series between data-frames
-(define (shared-series dfs)
-  (apply set-intersect (map df-series-names dfs)))
-
 ; binding a faceted list of data-frames into a singular data-frame
 ; assumption: the data-frames have at least one common column
 (define (combine . dfs)

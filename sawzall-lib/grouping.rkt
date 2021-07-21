@@ -19,21 +19,9 @@
                             data-frame?)])
  grouped-df-apply ignore-groups-apply)
 
-;;;; sorting by groups
-;; sorts the given data-frame by the given list of groups.
-;; unlike `reorder`, this behaves slightly differently, sorting by `grp` first
-;; and only using `grp2` to break ties, etc for others.
-;;
-;; TODO: this should support something other than `orderable<?`. how do we want
-;;       to specify that?
-;; XXX: inefficient. most time is spent here.
-;;      it would be nice if we didn't have to sort, but we probably do
-(define (sort-with-groups df grps)
-  (reorder-df df (map (cons _ orderable<?) grps)))
-
 ;;;; constructing grouped data frames
 (define (group-with df . groups)
-  (define sorted (sort-with-groups df groups))
+  (define sorted (reorder-default df groups))
 
   (define (build-group-vector grp [in-ivls (vector (ivl 0 (df-row-count df)))])
     (define vec (df-select sorted grp))

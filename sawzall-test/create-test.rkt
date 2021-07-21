@@ -73,7 +73,7 @@
              [adult #(1 2 3 4 5)]
              [juv #(10 20 30 40 50)]))
 
-(module+ main
+(module+ test
   (check data-frame~=? create-1 create-1-result)
   (check data-frame~=? create-2 create-2-result)
   (check data-frame~=? create-3 create-3-result)
