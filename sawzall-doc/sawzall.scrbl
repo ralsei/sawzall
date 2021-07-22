@@ -174,32 +174,38 @@ This operation subsets a data frame, returning rows which satisfy a given condit
 
 This operation subsets a data frame, returning columns specified by a smaller expression language.
 
-@defform/subs[#:literals (or and not columns matching containing ending-with starting-with everything
+@defform/subs[#:literals (or and not containing ending-with starting-with everything
                           data-frame? grouped-data-frame? string? regexp?)
               (slice df slice-spec)
               [(df (code:line data-frame?)
                    grouped-data-frame?)
                (slice-spec (code:line string?)
+                           [string? ...]
+                           regexp?
                            everything
-                           (columns string? ...)
                            (or slice-spec ...)
                            (and slice-spec ...)
                            (not slice-spec)
                            (starting-with string?)
                            (ending-with string?)
-                           (containing string?)
-                           (matching regexp?))]]{
+                           (containing string?))]]{
   Constructs a new data-frame with columns from the input @racket[df], with columns specified
   by the evaluation of @racket[slice-spec].
 
-  @racket[slice-spec] is an expression in a much smaller language. Merely a single string works
-  to select just that string, but the language has the following operators:
+  @racket[slice-spec] is an expression in a much smaller language.
+  Values in this language are:
+  @itemlist[
+    @item{A @racket[string?], to select a single string.}
+    @item{A @racket[regexp?], to select columns with names matching that regular expression.}
+  ]
+  The language has the following operators:
+  @specsubform[[str ...]
+               #:contracts ([str string?])]{
+    Selects the columns with names @racket[str]. This doesn't have to be brackets, but it is
+    recommended for readability's sake.
+  }
   @defsubform[#:id everything everything]{
     Selects every column in the given data-frame.
-  }
-  @defsubform[(columns str ...)
-              #:contracts ([str string?])]{
-    Selects the columns with names @racket[str].
   }
   @defsubform[(or spec ...)]{
     Selects the union of the given @racket[spec]s.
@@ -222,10 +228,6 @@ This operation subsets a data frame, returning columns specified by a smaller ex
               #:contracts ([substr string?])]{
     Selects columns with names containing the given @racket[substr].
   }
-  @defsubform[(matching rx)
-              #:contracts ([rx regexp?])]{
-    Selects columns with names matching the given regex @racket[rx].
-  }
 
   Using these outside of the context of @racket[slice] is a syntax error (aside from
   @racket[and], @racket[or], and @racket[not], for obvious reasons).
@@ -238,7 +240,7 @@ This operation subsets a data frame, returning columns specified by a smaller ex
         (slice "trt")
         show)
     (~> example-df
-        (slice (not (columns "trt" "grp")))
+        (slice (not ["trt" "grp"]))
         show)
     (~> example-df
         (slice (containing "t"))
