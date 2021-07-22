@@ -32,3 +32,4 @@
 
 (define gss-sm (df-read/csv "data/gss_sm.csv"))
 (define organdata (df-read/csv "data/organdata.csv"))
+(define iris (df-read/csv "data/iris.csv"))

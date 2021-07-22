@@ -29,18 +29,25 @@
 ;; - (containing String)
 
 (define (exec-spec universe quoted-spec)
+  (define (in-universe? var)
+    (set-member? universe var))
   (match quoted-spec
-    [(? string? var) (set var)]
+    [(? string? var)
+     (when (not (in-universe? var))
+       (error 'exec-spec "selection not in universe: ~a" var))
+     (set var)]
     [(? regexp? rx) (set-filter (curry regexp-match? rx) universe)]
     ['everything universe]
     [`(starting-with ,pref) (set-filter (string-prefix? _ pref) universe)]
     [`(ending-with ,suff) (set-filter (string-suffix? _ suff) universe)]
     [`(containing ,substr) (set-filter (string-contains? _ substr) universe)]
-    [`(columns . ,vars) (apply set vars)]
     [`(or . ,specs) (apply set-union (map (curry exec-spec universe) specs))]
     [`(and . ,specs) (apply set-intersect (map (curry exec-spec universe) specs))]
     [`(not ,spec) (set-subtract universe (exec-spec universe spec))]
-    [`(,vars ...) (apply set vars)]
+    [`(,vars ...)
+     (when (not (andmap in-universe? vars))
+       (error 'exec-spec "selection(s) not in universe: ~a" vars))
+     (apply set vars)]
     [_ (error 'exec-spec "invalid slice specification: ~a" quoted-spec)]))
 
 (define (slice-df df quoted-spec groups)
