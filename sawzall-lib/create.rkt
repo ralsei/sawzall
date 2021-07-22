@@ -2,7 +2,6 @@
 (require (for-syntax racket/base)
          data-frame
          fancy-app
-         racket/contract
          racket/function
          racket/match
          racket/vector
@@ -14,8 +13,7 @@
 (define-syntax (create stx)
   (column-syntax-form stx #'create/int #t))
 
-(define/contract (create/int df proc)
-  (-> (or/c data-frame? grouped-data-frame?) column-proc? (or/c data-frame? grouped-data-frame?))
+(define (create/int df proc)
   (grouped-df-apply (create-on-df _ proc) df))
 
 (define (create-on-df df proc)

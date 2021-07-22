@@ -2,7 +2,6 @@
 (require (for-syntax racket/base)
          data-frame
          fancy-app
-         racket/contract
          racket/match
          "grouped-df.rkt"
          "grouping.rkt"
@@ -12,8 +11,7 @@
 (define-syntax (where stx)
   (row-syntax-form stx #'where/int))
 
-(define/contract (where/int df proc)
-  (-> (or/c data-frame? grouped-data-frame?) row-proc? (or/c data-frame? grouped-data-frame?))
+(define (where/int df proc)
   (grouped-df-apply (where-df _ proc) df))
 
 (define (where-df df proc)

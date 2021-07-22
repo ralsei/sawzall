@@ -20,7 +20,7 @@
 
 (define-for-syntax (column-syntax-form stx internal-function-stx faux-types?)
   (syntax-parse stx
-    [(_ frame:expr [col:id (binding:binder ...) body:expr ...] ...)
+    [(_ frame [col:id (binding:binder ...) body:expr ...] ...)
      #:declare frame (expr/c #'(or/c data-frame? grouped-data-frame?))
      #:with internal-function internal-function-stx
      (when (and (not faux-types?)
@@ -41,7 +41,8 @@
 
 (define-for-syntax (row-syntax-form stx internal-function-stx)
   (syntax-parse stx
-    [(_ frame:expr (bound:id ...) body:expr ...)
+    [(_ frame (bound:id ...) body:expr ...)
+     #:declare frame (expr/c #'(or/c data-frame? grouped-data-frame?))
      #:with internal-function internal-function-stx
      #'(internal-function
         frame

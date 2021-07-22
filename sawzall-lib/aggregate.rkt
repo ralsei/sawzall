@@ -2,7 +2,6 @@
 (require (for-syntax racket/base)
          data-frame
          fancy-app
-         racket/contract
          racket/match
          racket/vector
          "grouped-df.rkt"
@@ -13,9 +12,7 @@
 (define-syntax (aggregate stx)
   (column-syntax-form stx #'aggregate/int #f))
 
-; summarizes a given data-frame into the given result by the saw-lambda, after splitting by group
-(define/contract (aggregate/int df proc)
-  (-> (or/c data-frame? grouped-data-frame?) column-proc? (or/c data-frame? grouped-data-frame?))
+(define (aggregate/int df proc)
   (ungroup-once (grouped-df-apply (aggregate-already-split _ _ proc) df #:pass-groups? #t)))
 
 ; after already having split the data-frame up, aggregate the results
