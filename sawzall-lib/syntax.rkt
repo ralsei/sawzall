@@ -14,13 +14,15 @@
   (define-syntax-class binder
     #:attributes (var ty)
     [pattern var:id #:attr ty (syntax #f)]
-    [pattern [var:id {~literal :} ty:id]]))
+    [pattern [var:id {~literal :} ty:id]
+             #:with quote-ty (quote ty)
+             #:declare quote-ty (expr/c #'(or/c 'element 'vector))]))
 
 (define-for-syntax (column-syntax-form stx internal-function-stx faux-types?)
   (syntax-parse stx
     [(_ frame:expr [col:id (binding:binder ...) body:expr ...] ...)
+     #:declare frame (expr/c #'(or/c data-frame? grouped-data-frame?))
      #:with internal-function internal-function-stx
-     #:with fn-name (attribute internal-function)
      (when (and (not faux-types?)
                 (andmap (λ (x) (and (syntax->datum x) #t)) (flatten (attribute binding.ty))))
        (raise-syntax-error (syntax->datum (attribute internal-function))
@@ -29,9 +31,7 @@
         frame
         (column-proc (list (symbol->string 'col) ...)
                      (list (list (cons (symbol->string 'binding.var)
-                                       (contract (or/c 'element 'vector #f)
-                                                 'binding.ty
-                                                 'fn-name 'fn-name))
+                                       'binding.ty)
                                  ...) ...)
                      (list (λ (binding.var ...)
                              body ...)
