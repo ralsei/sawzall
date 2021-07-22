@@ -8,8 +8,6 @@
          threading)
 (provide (all-defined-out))
 
-(require profile)
-
 ;; load in data from the R nycflights13 package
 ;; really big, so it's stored gzipped
 (define flights

@@ -17,6 +17,9 @@ common data-manipulation problems in a style similar to spreadsheets. Sawzall us
 @racketmodname[data-frame] library as its primary object of input and output, and is designed to
 manipulate these data-frames.
 
+Sawzall is designed around @italic{tidy data}, but most data found in the wild will not be tidy.
+For more information, see @secref{pivoting}.
+
 Sawzall is designed with the @racketmodname[threading] library in mind. While it is possible to use
 without it, most operations will be more natural expressed with @racket[~>].
 
@@ -65,6 +68,9 @@ however, these may be useful.
 
 @section[#:tag "display"]{Displaying data}
 
+These functions display data to the screen, for use in interactive data analysis. For @italic{saving}
+data, see @racket[df-write/csv] et al.
+
 @defproc[(show [df (or/c data-frame? grouped-data-frame?)] [#:all? all? boolean? #f]) void?]{
   Displays a data-frame @racket[df], alongside with grouping information (if it exists).
   Designed solely for interactive use. Also see @racket[df-describe], which presents summary statistics
@@ -88,12 +94,11 @@ however, these may be useful.
 
 @section[#:tag "grouping"]{Grouping and splitting}
 
-@subsection{Grouping}
-
 The overwhelming majority of operations in Sawzall respect the "grouping" of a data-frame. Most
 operations are done on groups defined by variables, so grouping takes an existing frame and converts
 it into a grouped one, in which operations are performed by group.
 
+@subsection{Grouping}
 @defproc[(grouped-data-frame? [v any/c]) boolean?]{
   Determines if the input @racket[v] is a grouped data-frame. These can only be constructed by
   @racket[group-with], or as the result on another operation on an existing grouped data-frame.
@@ -133,6 +138,8 @@ it into a grouped one, in which operations are performed by group.
 The following operations behave similar to the above counterparts, but they return a list instead of a
 grouped data frame, so you must use @racket[map] to do sequential groups or perform operations.
 
+These operations are also notably less performant due to the amount of copying involved.
+
 @defproc[(split-with [df data-frame?] [var string?]) (listof data-frame?)]{
   Splits the given data-frame @racket[df] along the input variable @racket[var], returning a list of each
   possibility.
@@ -143,6 +150,8 @@ grouped data frame, so you must use @racket[map] to do sequential groups or perf
 }
 
 @section[#:tag "where"]{Filtering}
+
+This operation subsets a data frame, returning rows which satisfy a given condition.
 
 @defform[(where df (bound-column ...) body ...)
          #:contracts ([df (or/c data-frame? grouped-data-frame?)])]{
@@ -161,7 +170,86 @@ grouped data frame, so you must use @racket[map] to do sequential groups or perf
   ]
 }
 
+@section[#:tag "slice"]{Slicing}
+
+This operation subsets a data frame, returning columns specified by a smaller expression language.
+
+@defform/subs[#:literals (or and not columns matching containing ending-with starting-with everything
+                          data-frame? grouped-data-frame? string? regexp?)
+              (slice df slice-spec)
+              [(df (code:line data-frame?)
+                   grouped-data-frame?)
+               (slice-spec (code:line string?)
+                           everything
+                           (columns string? ...)
+                           (or slice-spec ...)
+                           (and slice-spec ...)
+                           (not slice-spec)
+                           (starting-with string?)
+                           (ending-with string?)
+                           (containing string?)
+                           (matching regexp?))]]{
+  Constructs a new data-frame with columns from the input @racket[df], with columns specified
+  by the evaluation of @racket[slice-spec].
+
+  @racket[slice-spec] is an expression in a much smaller language. Merely a single string works
+  to select just that string, but the language has the following operators:
+  @defsubform[#:id everything everything]{
+    Selects every column in the given data-frame.
+  }
+  @defsubform[(columns str ...)
+              #:contracts ([str string?])]{
+    Selects the columns with names @racket[str].
+  }
+  @defsubform[(or spec ...)]{
+    Selects the union of the given @racket[spec]s.
+  }
+  @defsubform[(and spec ...)]{
+    Selects the intersection of the given @racket[spec]s.
+  }
+  @defsubform[(not spec ...)]{
+    Selects the complement of (everything but) the given @racket[spec]s.
+  }
+  @defsubform[(starting-with prefix)
+              #:contracts ([prefix string?])]{
+    Selects columns with names beginning with the given @racket[prefix].
+  }
+  @defsubform[(ending-with suffix)
+              #:contracts ([suffix string?])]{
+    Selects columns with names ending with the given @racket[suffix].
+  }
+  @defsubform[(containing substr)
+              #:contracts ([substr string?])]{
+    Selects columns with names containing the given @racket[substr].
+  }
+  @defsubform[(matching rx)
+              #:contracts ([rx regexp?])]{
+    Selects columns with names matching the given regex @racket[rx].
+  }
+
+  Using these outside of the context of @racket[slice] is a syntax error (aside from
+  @racket[and], @racket[or], and @racket[not], for obvious reasons).
+
+  This operation will not remove variables that a grouped data frame is grouped by, as
+  this would destroy group invariants.
+
+  @examples[#:eval ev
+    (~> example-df
+        (slice "trt")
+        show)
+    (~> example-df
+        (slice (not (columns "trt" "grp")))
+        show)
+    (~> example-df
+        (slice (containing "t"))
+        show)
+  ]
+}
+
 @section[#:tag "create"]{Creating and modifying columns}
+
+These operations add new variables, preserving existing ones. This operation uses both vectorized and
+regular operations.
 
 @defform/subs[#:literals (vector : element data-frame? grouped-data-frame?)
               (create df [new-column (binder ...) body ...] ...)
@@ -215,6 +303,9 @@ grouped data frame, so you must use @racket[map] to do sequential groups or perf
 }
 
 @section[#:tag "aggregate"]{Summarizing}
+
+This operation summarizes a data frame into a smaller one, using some kind of summary statistic,
+based on a vectorized operation.
 
 @defform[(aggregate df [new-column (bound-column ...) body ...] ...)
          #:contracts ([df (or/c data-frame? grouped-data-frame?)])]{
@@ -359,6 +450,11 @@ These joins combine variables from the two input data-frames.
 
 @section[#:tag "reorder"]{Sorting}
 
+These operations are related to sorting data-frames.
+
+Note that sorting a grouped data frame without respect to groups is not possible due to the way groups
+function internally.
+
 @defproc[(reorder [df (or/c data-frame? grouped-data-frame?)]
                   [column-spec (or/c string? (cons/c string? (-> any/c any/c boolean?)))]
                   ...)
@@ -422,6 +518,19 @@ These joins combine variables from the two input data-frames.
 }
 
 @section[#:tag "pivoting"]{Pivoting}
+
+The majority of data found in the wild will not be @italic{tidy}, and therefore not work with the above
+operations. The goal of pivoting is to help make your data tidy.
+
+Tidy data is data where:
+@itemlist[
+  @item{Every column is a variable.}
+  @item{Every row is an observation.}
+  @item{Every cell is a single value.}
+]
+
+So, for example, if you were to have a column corresponding to a value and not a variable (such as a site),
+or a column corresponding to a "type" of observation, these operations would help.
 
 @defproc[(pivot-longer [df data-frame?] [cols (non-empty-listof string?)]
                        [#:names-to names-to string?]

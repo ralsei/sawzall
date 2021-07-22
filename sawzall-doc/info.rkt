@@ -1,7 +1,7 @@
 #lang info
 
 (define collection "sawzall-doc")
-(define scribblings '(("sawzall.scrbl" ())))
+(define scribblings '(("sawzall.scrbl" (multi-page))))
 
 (define pkg-desc "Documentation for Sawzall")
 (define version "1.0")
