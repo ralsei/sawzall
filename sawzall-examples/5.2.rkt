@@ -9,6 +9,7 @@
 (define (sum vec) (for/sum ([v (in-vector vec)] #:when (number? v)) v))
 
 (define gss-sm (df-read/csv "data/gss_sm.csv"))
+
 ;; rel_by_region <- gss_sm %>%
 ;;     group_by(bigregion, religion) %>%
 ;;     summarize(N = n()) %>%

@@ -1,16 +1,12 @@
 #lang racket
-(require data-frame
-         racket/runtime-path
-         rackunit
+(require rackunit
          sawzall
-         threading
          "test-data.rkt"
          "util.rkt")
 
 ;; these really should be provided by sawzall, tbh
 (define (v/ vec c) (vector-map (λ (v) (/ v c)) vec))
 (define (sum vec) (for/sum ([v (in-vector vec)]) v))
-(define (skip-na vec) (vector-filter identity vec))
 
 ;; simple element mapping
 (define create-1 (create docs1 [egrp (grp) (string-append "e" grp)]))

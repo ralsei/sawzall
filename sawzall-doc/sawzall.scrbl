@@ -534,19 +534,18 @@ Tidy data is data where:
 So, for example, if you were to have a column corresponding to a value and not a variable (such as a site),
 or a column corresponding to a "type" of observation, these operations would help.
 
-@defproc[(pivot-longer [df data-frame?] [cols (non-empty-listof string?)]
-                       [#:names-to names-to string?]
-                       [#:values-to values-to string?])
-         data-frame?]{
+@defform[(pivot-longer df slice-spec
+                       #:names-to names-to #:values-to values-to)
+         #:contracts ([df data-frame?] [names-to string?] [values-to string?])]{
   Returns a new data-frame that is the input @racket[df] pivoted "longer", so less columns,
   more rows. This is useful for tidying wide-form data.
 
-  @racket[cols] are the columns to pivot (the ones to switch from wide form). Any column not
-  in @racket[cols] will be brought along so that former observations line up, but its data will
-  not be modified.
+  @racket[slice-spec] is an expression in the slice sub-language. See @secref{slice} for more information
+  on this language. Any not column returned by evaluating @racket[slice-spec] will be brought along so that
+  former observations line up, but its data will not be modified.
 
-  All the names of every column in @racket[cols] is brought into a new column with name @racket[names-to],
-  and all the values are brought into a new column with name @racket[values-to].
+  All the names of every column selected by @racket[slice-spec] is brought into a new column with name
+  @racket[names-to], and all the values are brought into a new column with name @racket[values-to].
 
   This function does not work with grouped data frames, as it has potential to destroy some internal
   invariants.
@@ -557,7 +556,7 @@ or a column corresponding to a "type" of observation, these operations would hel
                1   10   97 84 55
                2   11   78 47 54))
     (~> wide-df
-        (pivot-longer '("a" "b" "c") #:names-to "site" #:values-to "catch")
+        (pivot-longer ["a" "b" "c"] #:names-to "site" #:values-to "catch")
         show)
   ]
 }
