@@ -174,21 +174,27 @@ This operation subsets a data frame, returning rows which satisfy a given condit
 
 This operation subsets a data frame, returning columns specified by a smaller expression language.
 
-@defform/subs[#:literals (or and not containing ending-with starting-with everything
-                          data-frame? grouped-data-frame? string? regexp?)
+@defform/subs[#:literals (or and not containing ending-with starting-with everything all-in any-in
+                          data-frame? grouped-data-frame? string? regexp? sequence/c)
               (slice df slice-spec)
               [(df (code:line data-frame?)
                    grouped-data-frame?)
-               (slice-spec (code:line string?)
-                           [string? ...]
-                           regexp?
+               (slice-spec (code:line string)
+                           [string-literal ...]
+                           regexp
                            everything
                            (or slice-spec ...)
                            (and slice-spec ...)
                            (not slice-spec)
-                           (starting-with string?)
-                           (ending-with string?)
-                           (containing string?))]]{
+                           (all-in string-sequence)
+                           (any-in string-sequence)
+                           (starting-with string)
+                           (ending-with string)
+                           (containing string))
+               (string (code:line string?))
+               (regexp (code:line regexp?))
+               (string-literal (code:line string?))
+               (string-sequence (code:line (sequence/c string?)))]]{
   Constructs a new data-frame with columns from the input @racket[df], with columns specified
   by the evaluation of @racket[slice-spec].
 
@@ -203,6 +209,9 @@ This operation subsets a data frame, returning columns specified by a smaller ex
                #:contracts ([str string?])]{
     Selects the columns with names @racket[str]. This doesn't have to be brackets, but it is
     recommended for readability's sake.
+
+    The strings supplied here must be string literals, or else syntax errors would be too poor.
+    If you want to use a variable, use @racket[all-in] or @racket[any-in].
   }
   @defsubform[#:id everything everything]{
     Selects every column in the given data-frame.
@@ -216,7 +225,19 @@ This operation subsets a data frame, returning columns specified by a smaller ex
   @defsubform[(not spec ...)]{
     Selects the complement of (everything but) the given @racket[spec]s.
   }
-  @defsubform[(starting-with prefix)
+  @defsubform[(all-in sequence)
+              #:contracts ([sequence (sequence/c string?)])]{
+    Selects all variables with names in the given @racket[sequence]. If a name is present in
+    @racket[sequence] but not the data-frame, this errors.
+
+    The input sequence cannot be infinite, or this does not terminate.
+  }
+  @defsubform[(any-in sequence)
+              #:contracts ([sequence (sequence/c string?)])]{
+    Like @racket[all-in], but does not error when a name is not present in @racket[sequence], and
+    merely does not select it.
+  }
+  @defsubform[(starting-with suffix)
               #:contracts ([prefix string?])]{
     Selects columns with names beginning with the given @racket[prefix].
   }

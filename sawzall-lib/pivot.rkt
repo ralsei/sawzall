@@ -22,13 +22,13 @@
   #:declare df (expr/c #'data-frame?)
   #:declare name (expr/c #'string?)
   #:declare value (expr/c #'string?)
-  (pivot-longer/int df 'spec #:names-to name #:values-to value))
+  (pivot-longer/int df spec.parsed #:names-to name #:values-to value))
 
 ; lengthens data, increasing the number of rows and decreasing the number of columns
-(define (pivot-longer/int df quoted-spec
+(define (pivot-longer/int df parsed-spec
                           #:names-to name
                           #:values-to value)
-  (define cols (exec-spec-on-df df quoted-spec))
+  (define cols (exec-spec-on-df df parsed-spec))
 
   (define ~cols (set-subtract (apply set (df-series-names df)) cols))
   (define n-new-cols (set-count cols))

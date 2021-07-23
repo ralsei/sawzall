@@ -40,6 +40,13 @@
   (column-df [grp #("a" "a" "b" "b" "b")]
              [trt #("a" "b" "a" "b" "b")]))
 
+;; using a vector, and a list, and a set
+(define slice-8 (slice docs1 (all-in (vector "trt"))))
+(define slice-8a (slice docs1 (all-in (list "trt"))))
+(define slice-8b (slice docs1 (all-in (set "trt"))))
+(define slice-8c (slice docs1 (any-in (set "trt" "thisdoesntexist"))))
+(define slice-8-result (column-df [trt #("a" "b" "a" "b" "b")]))
+
 ;; slicing up iris, as in dplyr::select examples
 (define-runtime-path slice-iris-1-data "./results/slice_iris_1.csv")
 (define slice-iris-1 (slice iris (not ["Sepal.Length" "Petal.Length"])))
@@ -58,9 +65,6 @@
                              ungroup)))
   ;; ensure that these doesn't work despite grammar
   (check-exn exn? (thunk (slice woodland1 "not-in-woodland1")))
-  ;; this is valid syntax because `starts-with` could be an (expr/c #'string?),
-  ;; but we should runtime error on it
-  (check-exn exn? (thunk (slice woodland1 (starts-with "bleh"))))
 
   (check data-frame~=? slice-1 slice-1-result)
   (check data-frame~=? slice-2 slice-2-result)
@@ -69,6 +73,10 @@
   (check data-frame~=? slice-5 slice-5-result)
   (check data-frame~=? slice-6 slice-6-result)
   (check data-frame~=? slice-7 slice-7-result)
+  (check data-frame~=? slice-8 slice-8-result)
+  (check data-frame~=? slice-8a slice-8-result)
+  (check data-frame~=? slice-8b slice-8-result)
+  (check data-frame~=? slice-8c slice-8-result)
 
   (check-csv slice-iris-1 slice-iris-1-data)
   (check-equal? (sort (df-series-names slice-iris-1) string-ci<?)

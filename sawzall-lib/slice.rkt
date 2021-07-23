@@ -10,10 +10,11 @@
          "slice-spec.rkt")
 (provide slice
          everything starting-with ending-with containing
-         and or not)
+         and or not
+         all-in any-in)
 
-(define (slice-df df quoted-spec groups)
-  (define to-copy (exec-spec-on-df df quoted-spec))
+(define (slice-df df parsed-spec groups)
+  (define to-copy (exec-spec-on-df df parsed-spec))
   (when (not (set-empty? (set-intersect to-copy (apply set groups))))
     (error 'slice "cannot remove grouping variable from grouped data-frame"))
 
@@ -25,4 +26,4 @@
 
 (define-syntax-parse-rule (slice df spec:slice-spec)
   #:declare df (expr/c #'(or/c data-frame? grouped-data-frame?))
-  (ignore-groups-apply (λ (x grps) (slice-df x 'spec grps)) df #:pass-groups? #t))
+  (ignore-groups-apply (λ (x grps) (slice-df x spec.parsed grps)) df #:pass-groups? #t))
