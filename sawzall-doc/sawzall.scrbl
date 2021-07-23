@@ -623,3 +623,55 @@ or a column corresponding to a "type" of observation, these operations would hel
         show)
   ]
 }
+
+@section[#:tag "missing-values"]{Missing values}
+
+Occasionally, a data-set will have a literal missing value. While reading data into a data-frame,
+this can be specified with @racket[df-read/csv]'s @racket[#:na] argument; but usually, this value
+ends up being @racket[#f].
+
+These operations are designed to handle missing values, either by replacing them or dropping them.
+
+The following example data-frame will be used in this section:
+@examples[#:eval ev #:label #f
+  (define has-some-na
+    (row-df [col-a col-b]
+            1      #f
+            #f     2
+            3      4))
+]
+
+@defproc[(replace-na [df (or/c data-frame? grouped-data-frame?)]
+                     [column-name string?] [replace-with any/c] ...)
+         (or/c data-frame? grouped-data-frame?)]{
+  Returns a new data-frame with NA values in @racket[df] replaced with another value.
+  In each @racket[column-name], NA is replaced with @racket[replace-with].
+
+  @examples[#:eval ev
+    (~> has-some-na
+        (replace-na "col-a" 999)
+        show)
+    (~> has-some-na
+        (replace-na "col-a" 999
+                    "col-b" 333)
+        show)
+  ]
+}
+
+@defform[(drop-na df slice-spec)
+         #:contracts ([df (or/c data-frame? grouped-data-frame?)])]{
+  Returns a new data-frame like @racket[df], except with NA values removed from columns
+  specified by the evaluation of @racket[slice-spec].
+
+  The evaluation of @racket[slice-spec] determines what columns to remove NA values from.
+  For documentation on this language, see @secref{slice}.
+
+  @examples[#:eval ev
+    (~> has-some-na
+        (drop-na everything)
+        show)
+    (~> has-some-na
+        (drop-na "col-a")
+        show)
+  ]
+}

@@ -29,4 +29,4 @@
          (all-from-out "reorder.rkt")
          (all-from-out "slice.rkt")
          split-with combine
-         (all-from-out "where.rkt"))
+         where)

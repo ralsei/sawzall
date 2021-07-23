@@ -6,7 +6,7 @@
          "grouped-df.rkt"
          "grouping.rkt"
          "syntax.rkt")
-(provide where)
+(provide where where/int)
 
 (define-syntax (where stx)
   (row-syntax-form stx #'where/int))
