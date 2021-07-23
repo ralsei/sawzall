@@ -37,7 +37,7 @@
                       [_ (if all? n-rows row-cap)])
              v))))
 
-  (when (not (or all? (= row-cap n-rows) (= col-cap n-cols)))
+  (when (not (or all? (and (= n-rows row-cap) (= n-cols col-cap))))
     (printf "~a rows, ~a cols elided (use #:all? for full frame)~n"
             (- n-rows row-cap)
             (- n-cols col-cap))))
