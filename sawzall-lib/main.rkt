@@ -11,6 +11,7 @@
          "pivot.rkt"
          "rename.rkt"
          "reorder.rkt"
+         "separate.rkt"
          "slice.rkt"
          "split.rkt"
          "where.rkt")
@@ -27,6 +28,7 @@
          (all-from-out "pivot.rkt")
          (all-from-out "rename.rkt")
          (all-from-out "reorder.rkt")
+         (all-from-out "separate.rkt")
          (all-from-out "slice.rkt")
          split-with combine
          where)
