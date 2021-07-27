@@ -664,7 +664,7 @@ The following example data will be used in this section:
                    [#:separator separator (or/c string?
                                                 regexp?
                                                 exact-nonnegative-integer?
-                                                (listof exact-nonegative-integer?))
+                                                (listof exact-nonnegative-integer?))
                                           #px"[^[:alnum:]]+"]
                    [#:remove? remove? boolean? #t]
                    [#:fill fill (or/c 'left 'right) 'right])
