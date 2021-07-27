@@ -30,3 +30,14 @@
       (separate "sex-age"
                 #:into '("sex" "age")
                 #:separator 1)))
+
+(require graphite)
+
+(~> who
+    (where* (country) ("Afghanistan"))
+    (group-with "year" "age")
+    (aggregate [cases-sum (cases) (for/sum ([v (in-vector cases)]) v)])
+    ungroup
+    (graph #:data _
+           #:mapping (aes #:x "year" #:y "cases-sum" #:discrete-color "age")
+           (lines)))

@@ -2,9 +2,10 @@
 (require data-frame
          fancy-app
          racket/contract/base
-         racket/function
          racket/match
-         racket/vector)
+         racket/string
+         racket/vector
+         "helpers.rkt")
 (provide (contract-out [separate (->* (data-frame?
                                        string?
                                        #:into (non-empty-listof (or/c string? #f)))
@@ -21,26 +22,23 @@
                                       #:into (non-empty-listof (or/c string? #f)))
                                      (#:regex regexp?
                                       #:remove? boolean?)
-                                     data-frame?)]))
-
-;; splits a string at a given index
-(define (string-split-at str n)
-  (values (substring str 0 n)
-          (substring str n)))
+                                     data-frame?)]
+                       [unite (->* (data-frame?
+                                    string?
+                                    #:from (non-empty-listof string?))
+                                   (#:combine (-> any/c ... any/c)
+                                    #:remove? boolean?)
+                                   data-frame?)]))
 
 ;; creates substrings from a given list of indices
 ;; example:
 ;;   (substrings "asdfghjkl" (list 1 3 5 7))
-;;   => (list "a" "sd" "fg" "hj" "kl")
-(define (substrings str lst)
-  (apply
-   vector
-   (let loop ([substr str] [offset 0] [idxes lst])
-     (match idxes
-       ['() (list substr)]
-       [`(,idx . ,rst)
-        (define-values (l r) (string-split-at substr (- idx offset)))
-        (cons l (loop r idx rst))]))))
+;;   => (vector "a" "sd" "fg" "hj" "kl")
+(define (substrings s offset-list)
+  (define len (string-length s))
+  (for/vector ([start (in-sequences (list 0) offset-list)]
+               [end   (in-sequences offset-list (list len))])
+    (substring s start end)))
 
 ;; turns a column of strings into multiple columns of strings,
 ;; on some separator
@@ -50,10 +48,10 @@
                   #:remove? [remove? #t]
                   #:fill [fill 'right])
   (define (split str)
-    (cond [(or (regexp? separator) (string? separator))
+    (cond [(not str) #f]
+          [(or (regexp? separator) (string? separator))
            (apply vector (regexp-split separator str))]
-          [(number? separator)
-           (call-with-values (thunk (string-split-at str separator)) vector)]
+          [(number? separator) (substrings str (list separator))]
           [(list? separator) (substrings str separator)]
           [else #f]))
   ;; what to do with matches that don't match the rest
@@ -80,12 +78,12 @@
               ([v (in-vector split-up)]
                #:when v)
       (max cur-max (vector-length v))))
-  (define padded (vector-map (pad-or-truncate-vector _ max-len) split-up))
+  (define padded (vector-map (? pad-or-truncate-vector _ max-len) split-up))
 
   (define return-df (df-shallow-copy df))
   (for ([(name idx) (in-indexed (in-list new-column-names))]
         #:when name)
-    (df-add-series! return-df (make-series name #:data (vector-map (vector-ref _ idx) padded))))
+    (df-add-series! return-df (make-series name #:data (vector-map (? vector-ref _ idx) padded))))
   (when remove?
     (df-del-series! return-df column-name))
   return-df)
@@ -98,25 +96,38 @@
                  #:remove? [remove? #t])
   (define new-column-len (length new-column-names))
   (define (capture str)
-    (cond [str
-           (define res (regexp-match regex str))
-           (cond [res
-                  (when (not (> (length res) new-column-len))
-                    (error 'extract "too many matches for input ~a under pattern ~a" str regex))
-                  (apply vector (cdr res))]
-                 [else #f])]
-          [else #f]))
-  (define (vector-ref/f vec idx)
-    (cond [vec (vector-ref vec idx)]
+    (define res (? cdr (regexp-match regex str)))
+    (cond [res
+           (when (not (= (length res) new-column-len))
+             (error 'extract "too many/too few matches for input ~a under pattern ~a" str regex))
+           (apply vector res)]
           [else #f]))
 
   (define data (df-select df column-name))
-  (define split-up (vector-map capture data))
+  (define split-up (vector-map (λ? capture) data))
 
   (define return-df (df-shallow-copy df))
   (for ([(name idx) (in-indexed (in-list new-column-names))]
         #:when name)
-    (df-add-series! return-df (make-series name #:data (vector-map (vector-ref/f _ idx) split-up))))
+    (df-add-series! return-df (make-series name #:data (vector-map (? vector-ref _ idx) split-up))))
   (when remove?
     (df-del-series! return-df column-name))
+  return-df)
+
+;; turns multiple columns as specified by `parsed-spec` into one column,
+;; by applying `combine-fn`
+(define (unite df column-name
+               #:from to-combine
+               #:combine [combine-fn (λ args (string-join (filter (λ (x) x) args) "_"))]
+               #:remove? [remove? #t])
+  (define new-series
+    (make-series column-name
+                 #:data (for/vector ([data (apply in-data-frame/list df to-combine)])
+                          (apply combine-fn data))))
+
+  (define return-df (df-shallow-copy df))
+  (df-add-series! return-df new-series)
+  (when remove?
+    (for ([v (in-list to-combine)])
+      (df-del-series! return-df v)))
   return-df)

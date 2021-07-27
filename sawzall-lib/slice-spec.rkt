@@ -2,6 +2,7 @@
 (require (for-syntax racket/base)
          data-frame
          fancy-app
+         racket/contract/base
          racket/function
          racket/match
          racket/set
@@ -59,13 +60,13 @@
              #:with parsed #'(everything$)]
     [pattern (starting-with prefix)
              #:declare prefix (expr/c #'string?)
-             #:with parsed #'(starting-with$ prefix)]
+             #:with parsed #'(starting-with$ prefix.c)]
     [pattern (ending-with suffix)
              #:declare suffix (expr/c #'string?)
-             #:with parsed #'(ending-with$ suffix)]
+             #:with parsed #'(ending-with$ suffix.c)]
     [pattern (containing substr)
              #:declare substr (expr/c #'string?)
-             #:with parsed #'(containing$ substr)]
+             #:with parsed #'(containing$ substr.c)]
     [pattern (or spec:slice-spec ...+)
              #:with parsed #'(or$ (list spec.parsed ...))]
     [pattern (and spec:slice-spec ...+)
@@ -74,15 +75,15 @@
              #:with parsed #'(not$ spec.parsed)]
     [pattern (all-in sequence)
              #:declare sequence (expr/c #'(sequence/c string?))
-             #:with parsed #'(all-in$ sequence)]
+             #:with parsed #'(all-in$ sequence.c)]
     [pattern (any-in sequence)
              #:declare sequence (expr/c #'(sequence/c string?))
-             #:with parsed #'(any-in$ sequence)]
+             #:with parsed #'(any-in$ sequence.c)]
     [pattern [var:string ...+]
              #:with parsed #'(multi-var$ (list var ...))]
     [pattern var
              #:declare var (expr/c #'(or/c string? regexp?))
-             #:with parsed #'var]))
+             #:with parsed #'var.c]))
 
 (define (exec-spec universe parsed-spec)
   (define (in-universe? var)

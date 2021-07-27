@@ -170,6 +170,20 @@ This operation subsets a data frame, returning rows which satisfy a given condit
   ]
 }
 
+@defform[(where* df (column-name ...) (match-pattern ...))
+         #:contracts ([df (or/c data-frame? grouped-data-frame?)])]{
+  Returns @racket[df], except only rows in which @racket[column-name] matches each @racket[match-pattern]
+  is kept. See @racket[match].
+
+  There must be exactly as many @racket[column-name]s as there are @racket[match-pattern]s.
+
+  @examples[#:eval ev
+    (~> example-df
+        (where* (grp juv) ("b" (? (λ (x) (< x 50)) _)))
+        show)
+  ]
+}
+
 @section[#:tag "slice"]{Slicing}
 
 This operation subsets a data frame, returning columns specified by a smaller expression language.
@@ -620,6 +634,145 @@ or a column corresponding to a "type" of observation, these operations would hel
                2   11   "b" 99))
     (~> long-df2
         (pivot-wider #:names-from "grp" #:values-from "val")
+        show)
+  ]
+}
+
+@section[#:tag "separate"]{Separating variables}
+
+One of the principles of tidy data (as discussed in @secref{pivoting}) is that every column represents
+a single variable. So when a column represents two or more variables, or when a column has half of a
+variable (which is more rare), that data is not tidy regardless of its pivoting.
+
+These operations are designed to separate string variables into different columns, or unite two
+variables into one column.
+
+The following example data will be used in this section:
+@examples[#:eval ev #:label #f
+  (define to-separate
+    (row-df [col]
+            #f
+            "a-b"
+            "a-d"
+            "b-c"
+            "d-e"))
+]
+
+@defproc[(separate [df data-frame?]
+                   [column-name string?]
+                   [#:into into (non-empty-listof (or/c string? #f))]
+                   [#:separator separator (or/c string?
+                                                regexp?
+                                                exact-nonnegative-integer?
+                                                (listof exact-nonegative-integer?))
+                                          #px"[^[:alnum:]]+"]
+                   [#:remove? remove? boolean? #t]
+                   [#:fill fill (or/c 'left 'right) 'right])
+         data-frame?]{
+  Returns a new data-frame with the same data as @racket[df], except the contents of
+  @racket[column-name] are split into separate variables according to @racket[separator], with
+  the names specified by @racket[into] for each split of the result.
+
+  The variable stored in @racket[column-name] must be a string variable (alongside NA values).
+
+  @racket[into] specifies what variables (index-wise) the result should be placed into. If
+  @racket[#f] is placed in @racket[into], that result of the split is skipped.
+
+  @racket[separator] is either a string, a regular expression, a number, or a list of numbers.
+  @itemlist[
+    @item{If @racket[separator] is a string or regular expression, @racket[regexp-split] is used
+          to split up the values of @racket[column-name].}
+    @item{If @racket[separator] is a number, the string is split into two pieces along that
+          index into the string.}
+    @item{If @racket[separator] is a list of numbers, the string is split into multiple pieces
+          along those indices.}
+  ]
+  The default separator splits along all non-alphanumeric characters.
+
+  If there are more results of a split than there are variables in @racket[into], the excess variables
+  are dropped.
+
+  If there are less results of a split than there are variables in @racket[into], NAs are inserted to
+  the rightmost variables in the list if @racket[fill] is @racket['right], and to the leftmost if it is
+  @racket['left].
+
+  If @racket[remove?] is true, @racket[column-name] will not be present in the output data-frame.
+
+  This function does not worked on grouped data frames, due to its potential to destroy group invariants.
+
+  @examples[#:eval ev
+    (~> to-separate
+        (separate "col" #:into '("A" "B"))
+        show)
+    (~> to-separate
+        (separate "col" #:into '("A" #f) #:remove? #f)
+        show)
+    (~> to-separate
+        (separate "col" #:into '("A" "B") #:separator 1)
+        show)
+  ]
+}
+
+@defproc[(extract [df data-frame?]
+                  [column-name string?]
+                  [#:into into (non-empty-listof (or/c string? #f))]
+                  [#:regex regex regexp? #px"([[:alnum:]]+)"]
+                  [#:remove? remove? boolean? #t])
+         data-frame?]{
+  Like @racket[separate], but uses regular expression capturing groups, rather than splitting the
+  contents of @racket[column-name].
+
+  The variable stored in @racket[column-name] must be a string variable (alongside NA values).
+
+  @racket[regex] is a regular expression with capturing groups. @racket[regex] is expected to
+  have as many or less capturing groups (excluding group 0) as @racket[into] has variables. By
+  default, this captures the first alphanumeric sequence.
+
+  If the regex has no match, NA will appear in the output columns.
+
+  If @racket[remove?] is true, @racket[column-name] will not be present in the output data-frame.
+
+  This function does not work on grouped data frames, due to its potential to destroy group invariants.
+
+  @examples[#:eval ev
+    (~> to-separate
+        (extract "col" #:into '("A"))
+        show)
+    (~> to-separate
+        (extract "col"
+                 #:into '("A" "B")
+                 #:regex #px"([a-d]+)-([a-d]+)")
+        show)
+  ]
+}
+
+@defproc[(unite [df data-frame?]
+                [column-name string?]
+                [#:from from (non-empty-listof string?)]
+                [#:combine combine-fn
+                           (-> any/c ... any/c)
+                           (λ args (string-join (filter (λ (x) x) args) "_"))]
+                [#:remove? remove? boolean? #t])
+         data-frame?]{
+  The inverse transformation to @racket[separate]. Takes the variables in @racket[from] in @racket[df],
+  and combines them using @racket[combine-fn] into a new column @racket[column-name].
+
+  By default, @racket[combine-fn] takes each present variable, and inserts an underscore between them.
+
+  If @racket[remove?] is true, all columns in @racket[from] will not be present in the output data-frame.
+
+  This function does not work on grouped data frames, due to its potential to destroy group invariants.
+
+  @examples[#:eval ev
+    (define to-unite
+      (row-df [str-a str-b num-a num-b]
+              #f     "c"   13    90
+              "a"    "b"   19    20
+              "b"    #f    50    90
+              "e"    "d"   59    25))
+    (~> to-unite
+        (unite "str" #:from '("str-a" "str-b"))
+        (unite "num" #:from '("num-a" "num-b") #:combine +)
         show)
   ]
 }

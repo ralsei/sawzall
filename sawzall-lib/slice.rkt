@@ -26,4 +26,4 @@
 
 (define-syntax-parse-rule (slice df spec:slice-spec)
   #:declare df (expr/c #'(or/c data-frame? grouped-data-frame?))
-  (ignore-groups-apply (λ (x grps) (slice-df x spec.parsed grps)) df #:pass-groups? #t))
+  (ignore-groups-apply (λ (x grps) (slice-df x spec.parsed grps)) df.c #:pass-groups? #t))

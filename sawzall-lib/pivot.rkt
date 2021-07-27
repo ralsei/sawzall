@@ -22,7 +22,7 @@
   #:declare df (expr/c #'data-frame?)
   #:declare name (expr/c #'string?)
   #:declare value (expr/c #'string?)
-  (pivot-longer/int df spec.parsed #:names-to name #:values-to value))
+  (pivot-longer/int df.c spec.parsed #:names-to name.c #:values-to value.c))
 
 ; lengthens data, increasing the number of rows and decreasing the number of columns
 (define (pivot-longer/int df parsed-spec

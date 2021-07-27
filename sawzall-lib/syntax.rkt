@@ -1,8 +1,10 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/list)
+         data-frame
          racket/contract/base
-         syntax/parse/define)
+         syntax/parse/define
+         "grouped-df.rkt")
 (provide (struct-out column-proc)
          (struct-out row-proc)
          (for-syntax column-syntax-form
@@ -28,7 +30,7 @@
        (raise-syntax-error (syntax->datum (attribute internal-function))
                            "types should not be specified here"))
      #'(internal-function
-        frame
+        frame.c
         (column-proc (list (symbol->string 'col) ...)
                      (list (list (cons (symbol->string 'binding.var)
                                        'binding.ty)
@@ -45,7 +47,7 @@
      #:declare frame (expr/c #'(or/c data-frame? grouped-data-frame?))
      #:with internal-function internal-function-stx
      #'(internal-function
-        frame
+        frame.c
         (row-proc (list (symbol->string 'bound) ...)
                   (λ (bound ...)
                     body ...)))]))

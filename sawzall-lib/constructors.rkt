@@ -11,7 +11,7 @@
              #:with name #'(symbol->string 'col)]
     [pattern col
              #:declare col (expr/c #'string?)
-             #:with name #'col])
+             #:with name #'col.c])
 
   (define (slice n lst)
     (sequence->list (in-slice n (in-list lst))))

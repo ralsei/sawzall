@@ -2,6 +2,7 @@
 (require (for-syntax racket/base)
          data-frame
          fancy-app
+         racket/contract/base
          racket/function
          racket/sequence
          racket/set
@@ -41,7 +42,7 @@
 
 (define-syntax-parse-rule (drop-na df spec:slice-spec)
   #:declare df (expr/c #'(or/c data-frame? grouped-data-frame?))
-  (ignore-groups-apply (λ (d) (drop-na-df d spec.parsed)) df))
+  (ignore-groups-apply (λ (d) (drop-na-df d spec.parsed)) df.c))
 
 (define (drop-na-df df parsed-spec)
   (define columns (set->list (exec-spec-on-df df parsed-spec)))

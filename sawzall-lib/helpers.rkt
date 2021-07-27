@@ -4,7 +4,8 @@
          racket/match
          racket/set
          "grouped-df.rkt")
-(provide possibilities
+(provide ? λ?
+         possibilities
          vector-reorder
          vector-reorder!
          df-na-value
@@ -12,6 +13,14 @@
          lexicographic-vector<?
          orderable?
          (contract-out [orderable<? (-> orderable? orderable? boolean?)]))
+
+(define (? fn . args)
+  (if (andmap (λ (x) (and x #t)) args)
+      (apply fn args)
+      #f))
+
+(define ((λ? fn) . args)
+  (apply ? fn args))
 
 ; determines the NA value in a given df series
 (define (df-na-value df col)

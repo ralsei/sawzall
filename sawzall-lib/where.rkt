@@ -2,11 +2,13 @@
 (require (for-syntax racket/base)
          data-frame
          fancy-app
+         racket/contract/base
          racket/match
+         syntax/parse/define
          "grouped-df.rkt"
          "grouping.rkt"
          "syntax.rkt")
-(provide where where/int)
+(provide where where* where/int)
 
 (define-syntax (where stx)
   (row-syntax-form stx #'where/int))
@@ -28,3 +30,12 @@
                     (make-series name #:data (for/vector ([idx (in-list indices)])
                                                (df-ref/sub df idx name)))))
   return-df)
+
+(define-syntax-parse-rule (where* df (name:id ...) (pat:expr ...))
+  #:declare df (expr/c #'(or/c data-frame? grouped-data-frame?))
+  #:fail-when (not (= (length (attribute name)) (length (attribute pat))))
+  "number of names must be the same as the number of match patterns"
+  (where df.c (name ...)
+         (match (list name ...)
+           [(list pat ...) #t]
+           [_ #f])))
