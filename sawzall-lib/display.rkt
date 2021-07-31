@@ -3,6 +3,7 @@
          fancy-app
          text-table
          racket/contract/base
+         racket/format
          racket/list
          "grouped-df.rkt"
          "grouping.rkt")
@@ -11,7 +12,10 @@
                                   void?)]
                        [introspect (->* ((or/c data-frame? grouped-data-frame?))
                                         (#:all? boolean?)
-                                        (or/c data-frame? grouped-data-frame?))]))
+                                        (or/c data-frame? grouped-data-frame?))]
+                       [sawzall-show-formatter (parameter/c (-> any/c string?))]))
+
+(define sawzall-show-formatter (make-parameter ~a))
 
 (define *show-rows-default* 6)
 (define *show-cols-default* 6)
@@ -30,12 +34,14 @@
   (when (not (null? grps))
     (printf "groups: ~a~n" grps))
 
-  (print-table
-   (let ([series (if all? all-series (take all-series col-cap))])
-     (cons series
-           (for/list ([v (apply in-data-frame/list df series)]
-                      [_ (if all? n-rows row-cap)])
-             v))))
+  (displayln
+   (table->string
+    #:->string (sawzall-show-formatter)
+    (let ([series (if all? all-series (take all-series col-cap))])
+      (cons series
+            (for/list ([v (apply in-data-frame/list df series)]
+                       [_ (if all? n-rows row-cap)])
+              v)))))
 
   (when (not (or all? (and (= n-rows row-cap) (= n-cols col-cap))))
     (printf "~a rows, ~a cols elided (use #:all? for full frame)~n"

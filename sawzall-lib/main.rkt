@@ -9,6 +9,7 @@
          "helpers.rkt"
          "missing-values.rkt"
          "pivot.rkt"
+         "rectangling.rkt"
          "rename.rkt"
          "reorder.rkt"
          "separate.rkt"
@@ -26,6 +27,7 @@
          orderable? orderable<?
          (all-from-out "missing-values.rkt")
          (all-from-out "pivot.rkt")
+         (all-from-out "rectangling.rkt")
          (all-from-out "rename.rkt")
          (all-from-out "reorder.rkt")
          (all-from-out "separate.rkt")

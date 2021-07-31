@@ -2,9 +2,14 @@
 @(require scribble/example (for-label (except-in racket rename)
                                       data-frame sawzall threading))
 
+@;; avoid showing full vectors in unnesting examples
 @(define ev
    (let ([eval (make-base-eval)])
-     (eval '(require data-frame threading sawzall racket/vector))
+     (eval '(require data-frame threading sawzall racket/format racket/vector))
+     (eval '(sawzall-show-formatter (λ (x) (if (vector? x)
+                                               "#<vector>"
+                                               (~a x #:max-width 15
+                                                     #:limit-marker "...")))))
      eval))
 
 @title{Sawzall: A grammar for chopping up data}
@@ -773,6 +778,100 @@ The following example data will be used in this section:
     (~> to-unite
         (unite "str" #:from '("str-a" "str-b"))
         (unite "num" #:from '("num-a" "num-b") #:combine +)
+        show)
+  ]
+}
+
+@section[#:tag "unnest"]{Unnesting}
+
+Sometimes, data that's read into a data-frame will have deeply nested structure (for example, when
+reading JSON directly into a data-frame). These operations convert these variables into tidy data,
+as described in @secref{pivoting}; with enough unnesting, these operations can turn this data into
+a tidy data-frame (when all hashes, vectors, lists, etc are removed).
+
+These operations only work on "list-like" (the sequence returns one value per iteration) or
+"dictionary-like" (two values per iteration) sequences.
+
+The following example data-frame will be used in this section:
+@examples[#:eval ev #:label #f
+  (define deep-df
+    (column-df
+     [character #("Toothless" "Dory" "Holly")]
+     [metadata
+     (vector
+      (hash 'species "dragon"
+            'color   "black"
+            'films   (vector "How to Train Your Dragon"
+                             "How to Train Your Dragon 2"
+                             "How to Train Your Dragon: The Hidden World"))
+      (hash 'species "blue tang"
+            'color   "blue"
+            'films   (vector "Finding Nemo"
+                             "Finding Dory"))
+      (hash 'species "glaceon"
+            'color   "also blue"
+            'films   #f))]))
+]
+
+@defproc[(unnest-wider [df data-frame?]
+                       [column-name string?]
+                       [#:index-prefix index-prefix string? "idx-"]
+                       [#:remove? remove? boolean? #t])
+         data-frame?]{
+  Returns a data-frame like @racket[df], except the given @racket[column-name]'s data is collapsed
+  into new columns based on its keys. @racket[column-name] is expected to contain sequences and
+  NA values.
+
+  If @racket[column-name]'s data is "list-like" (returns one element per iteration), the column
+  names will be @racket[index-prefix] concatenated with its index plus one. Otherwise, the column
+  names will be the "keys" (first element) of the sequence.
+
+  If the keys of the given sequence are not strings, they will be converted to strings with
+  @racket[~a].
+
+  If @racket[remove?] is true, @racket[column-name] will be removed from the result data-frame.
+
+  @examples[#:eval ev
+    (define expanded-metadata
+      (~> deep-df
+          (unnest-wider "metadata")
+          introspect))
+
+    (~> expanded-metadata
+        (unnest-wider "films")
+        (slice ["character" "idx-1" "idx-2" "idx-3"])
+        show)
+  ]
+}
+
+@defproc[(unnest-longer [df data-frame?]
+                        [column-name string?]
+                        [#:keys-to keys-to (or/c string? #f) #f]
+                        [#:values-to values-to (or/c string? #f) #f]
+                        [#:remove? remove? boolean? #t])
+         data-frame?]{
+  Returns a data-frame like @racket[df], except the given @racket[column-name]'s data is collapsed
+  into new columns: @racket[keys-to] for the keys (if there are any), and @racket[values-to] for
+  the value. @racket[column-name] is expected to contain sequences and NA values.
+
+  If @racket[values-to] is unspecified or @racket[#f], it defaults to @racket[column-name].
+
+  If @racket[keys-to] is unspecified or @racket[#f], it defaults to
+  @racket[(string-append column-name "-keys")].
+
+  If @racket[column-name]'s data is "list-like" (returns one element per iteration), the column
+  @racket[keys-to] is not added, even if it specified.
+
+  If @racket[remove?] is @racket[#t], @racket[column-name] will be removed from the result
+  data-frame, unless @racket[column-name] is equal to @racket[values-to].
+
+  @examples[#:eval ev
+    (~> deep-df
+        (unnest-longer "metadata")
+        show)
+
+    (~> expanded-metadata
+        (unnest-longer "films")
         show)
   ]
 }
