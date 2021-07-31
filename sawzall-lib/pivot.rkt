@@ -30,12 +30,12 @@
                           #:values-to value)
   (define cols (exec-spec-on-df df parsed-spec))
 
-  (define ~cols (set-subtract (apply set (df-series-names df)) cols))
+  (define ~cols (set-subtract (df-series-names df) cols))
   (define n-new-cols (set-count cols))
   ; each column becomes a set of rows = to the length of the df
   ; so replicate retained series based on the number of columns
   (define new-~col-series
-    (for/list ([name (in-set ~cols)])
+    (for/list ([name (in-list ~cols)])
       (make-series name
                    #:data (apply vector-append
                                  (make-list n-new-cols (df-select df name))))))

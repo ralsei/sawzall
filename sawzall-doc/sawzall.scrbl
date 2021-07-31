@@ -309,6 +309,27 @@ This operation subsets a data frame, returning columns specified by a smaller ex
   ]
 }
 
+@defproc[(take-rows [df (or/c data-frame? grouped-data-frame?)]
+                    [beg exact-nonnegative-integer?]
+                    [end exact-nonnegative-integer?])
+         (or/c data-frame? grouped-data-frame?)]{
+  Takes rows from @racket[df], starting at @racket[beg] and ending at @racket[end],
+  and returns a new data-frame with those rows.
+
+  If @racket[df] is grouped, this takes rows from inside each group.
+
+  @examples[#:eval ev
+    (~> example-df
+        (take-rows 0 3)
+        show)
+
+    (~> example-df
+        (group-with "trt")
+        (take-rows 0 1)
+        show)
+  ]
+}
+
 @section[#:tag "create"]{Creating and modifying columns}
 
 These operations add new variables, preserving existing ones. This operation uses both vectorized and

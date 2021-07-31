@@ -17,10 +17,10 @@
   (row-df [day hour site catch]
           1    10   "a"  97
           2    11   "a"  78
-          1    10   "c"  55
-          2    11   "c"  54
           1    10   "b"  84
-          2    11   "b"  47))
+          2    11   "b"  47
+          1    10   "c"  55
+          2    11   "c"  54))
 
 (define-runtime-path relig-income-pivot-longer-1-data
   "./results/relig_income_pivot_longer_1.csv")

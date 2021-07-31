@@ -15,8 +15,6 @@
          and or not
          all-in any-in)
 
-(define (set-filter f? s) (for/set ([v (in-set s)] #:when (f? v)) v))
-
 ;; a Slice-Spec is one of:
 ;; - String
 ;; - Regex
@@ -92,12 +90,12 @@
     [(? string? var)
      (when (not (in-universe? var))
        (error 'exec-spec "selection not in universe: ~a" var))
-     (set var)]
-    [(? regexp? rx) (set-filter (curry regexp-match? rx) universe)]
+     (list var)]
+    [(? regexp? rx) (filter (curry regexp-match? rx) universe)]
     [(everything$) universe]
-    [(starting-with$ pref) (set-filter (string-prefix? _ pref) universe)]
-    [(ending-with$ suff) (set-filter (string-suffix? _ suff) universe)]
-    [(containing$ substr) (set-filter (string-contains? _ substr) universe)]
+    [(starting-with$ pref) (filter (string-prefix? _ pref) universe)]
+    [(ending-with$ suff) (filter (string-suffix? _ suff) universe)]
+    [(containing$ substr) (filter (string-contains? _ substr) universe)]
     [(or$ specs) (apply set-union (map (curry exec-spec universe) specs))]
     [(and$ specs) (apply set-intersect (map (curry exec-spec universe) specs))]
     [(not$ spec) (set-subtract universe (exec-spec universe spec))]
@@ -105,15 +103,14 @@
      (define lst (sequence->list sequence))
      (when (not (andmap in-universe? lst))
        (error 'exec-spec "some selection(s) not in universe: ~a" lst))
-     (apply set lst)]
+     lst]
     [(any-in$ sequence)
-     (define lst (sequence->list (sequence-filter in-universe? sequence)))
-     (apply set lst)]
+     (sequence->list (sequence-filter in-universe? sequence))]
     [(multi-var$ vars)
      (when (not (andmap in-universe? vars))
        (error 'exec-spec "some selection(s) not in universe: ~a" vars))
-     (apply set vars)]
+     (apply list vars)]
     [_ (error 'exec-spec "invalid slice specification: ~a" parsed-spec)]))
 
 (define (exec-spec-on-df df parsed-spec)
-  (exec-spec (apply set (df-series-names df)) parsed-spec))
+  (exec-spec (df-series-names df) parsed-spec))
