@@ -97,6 +97,27 @@ data, see @racket[df-write/csv] et al.
   @racket[~>] chain, and then continuing processing.
 }
 
+@defparam[sawzall-show-formatter formatter (-> any/c string?) #:value ~a]{
+  Controls the behavior of @racket[show] and @racket[introspect] by determining how to format
+  each element.
+
+  For the purposes of this documentation (largely for @secref{unnest}), this is
+  @racketblock[
+    (λ (x)
+      (if (vector? x)
+          "#<vector>"
+          (~a x
+              #:max-width 15
+              #:limit-marker "...")))
+  ]
+
+  @examples[#:eval ev
+    (parameterize ([sawzall-show-formatter
+                    (λ (x) (if (number? x) "#<number>" (~a x)))])
+      (show example-df))
+  ]
+}
+
 @section[#:tag "grouping"]{Grouping and splitting}
 
 The overwhelming majority of operations in Sawzall respect the "grouping" of a data-frame. Most
