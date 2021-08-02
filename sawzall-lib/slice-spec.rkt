@@ -13,7 +13,11 @@
          exec-spec exec-spec-on-df
          everything starting-with ending-with containing
          and or not
-         all-in any-in)
+         all-in any-in
+
+         everything$ starting-with$ ending-with$ containing$
+         and$ or$ not$
+         all-in$ any-in$)
 
 ;; a Slice-Spec is one of:
 ;; - String

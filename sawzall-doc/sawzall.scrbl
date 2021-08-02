@@ -49,7 +49,7 @@ to read in real-world data from some source. If you are constructing data from a
 however, these may be useful.
 
 @defform[(column-df [column-name column-data] ...)
-         #:contracts ([column-name (or/c identfier? string?)]
+         #:contracts ([column-name (or/c identifier? string?)]
                       [column-data vector?])]{
   Constructs a data-frame with the given @racket[column-name]s, with each @racket[column-data]
   as the data in each column.
@@ -76,23 +76,55 @@ however, these may be useful.
 These functions display data to the screen, for use in interactive data analysis. For @italic{saving}
 data, see @racket[df-write/csv] et al.
 
-@defproc[(show [df (or/c data-frame? grouped-data-frame?)] [#:all? all? boolean? #f]) void?]{
+The following example is used in this section:
+@examples[#:eval ev #:label #f
+(define anscombe
+  (row-df [x1 x2 x3 x4 y1    y2   y3    y4]
+          10  10 10 8  8.04  9.14 7.46  6.58
+          8   8  8  8  6.95  8.14 6.77  5.76
+          13  13 13 8  7.58  8.74 12.74 7.71
+          9   9  9  8  8.81  8.77 7.11  8.84
+          11  11 11 8  8.33  9.26 7.81  8.47
+          14  14 14 8  9.96  8.11 8.84  7.04
+          6   6  6  8  7.24  6.13 6.08  5.25
+          4   4  4  19 4.26  3.11 5.39  12.5
+          12  12 12 8  10.84 9.13 8.15  5.56
+          7   7  7  8  4.82  7.26 6.42  7.91
+          5   5  5  8  5.68  4.74 5.73  6.89))
+]
+
+@defform/subs[#:literals (data-frame? grouped-data-frame? exact-nonnegative-integer?)
+              (show df maybe-slice-spec maybe-n-rows)
+              [(maybe-slice-spec (code:line)
+                                 slice-spec)
+               (maybe-n-rows (code:line)
+                             (code:line #:n-rows n-rows))]
+              #:contracts ([df (or/c data-frame? grouped-data-frame?)]
+                           [n-rows (or/c exact-nonnegative-integer? 'all)])]{
   Displays a data-frame @racket[df], alongside with grouping information (if it exists).
   Designed solely for interactive use. Also see @racket[df-describe], which presents summary statistics
   about a given data-frame.
 
   By default, six rows and six columns are shown (along with the names of each column), and the rest
-  are elided. The columns shown are an in an unspecified order (as is @racket[df-series-names]). To
-  display the entirety of @racket[df], pass @racket[#:all #t]: but this is likely to be overwhelming
-  for large data-frames.
+  are elided. The columns shown are an in an unspecified order (as is @racket[df-series-names]). If not
+  all columns or rows are shown in the output, information will be shown about the missing ones.
+
+  Optionally, a slice spec @racket[maybe-slice-spec] (see @secref{slice}) is taken. If a slice-spec that
+  is deterministic (does not use @racket[everything] or a nondeterministic sequence) is given, the output
+  column order and presence will be deterministic.
+
+  Optionally, a number of rows @racket[n-rows] to display is taken. This is either an integer or the symbol
+  @racket['all], in which case all rows are shown.
 
   @examples[#:eval ev
-    (show example-df)
+    (show anscombe)
+    (show anscombe #:n-rows 'all)
+    (show anscombe everything)
+    (show anscombe ["x1" "y2" "y4"])
   ]
 }
 
-@defproc[(introspect [df (or/c data-frame? grouped-data-frame?)] [#:all? all? boolean? #f])
-         (or/c data-frame? grouped-data-frame?)]{
+@defform[(introspect df maybe-slice-spec maybe-n-rows)]{
   Like @racket[show], but returns its input. Useful for looking at the intermediate frame in a
   @racket[~>] chain, and then continuing processing.
 }
@@ -217,9 +249,7 @@ This operation subsets a data frame, returning columns specified by a smaller ex
 @defform/subs[#:literals (or and not containing ending-with starting-with everything all-in any-in
                           data-frame? grouped-data-frame? string? regexp? sequence/c)
               (slice df slice-spec)
-              [(df (code:line data-frame?)
-                   grouped-data-frame?)
-               (slice-spec (code:line string)
+              [(slice-spec (code:line string)
                            [string-literal ...]
                            regexp
                            everything
@@ -230,11 +260,12 @@ This operation subsets a data frame, returning columns specified by a smaller ex
                            (any-in string-sequence)
                            (starting-with string)
                            (ending-with string)
-                           (containing string))
-               (string (code:line string?))
-               (regexp (code:line regexp?))
-               (string-literal (code:line string?))
-               (string-sequence (code:line (sequence/c string?)))]]{
+                           (containing string))]
+              #:contracts ([df (or/c data-frame? grouped-data-frame?)]
+                           [string string?]
+                           [regexp regexp?]
+                           [string-literal string?]
+                           [string-sequence (sequence/c string?)])]{
   Constructs a new data-frame with columns from the input @racket[df], with columns specified
   by the evaluation of @racket[slice-spec].
 
@@ -337,12 +368,11 @@ regular operations.
 
 @defform/subs[#:literals (vector : element data-frame? grouped-data-frame?)
               (create df [new-column (binder ...) body ...] ...)
-              [(df (code:line data-frame?)
-                   grouped-data-frame?)
-               (binder (code:line bound-column)
+              [(binder (code:line bound-column)
                        [bound-column : type])
                (type (code:line element)
-                     vector)]]{
+                     vector)]
+              #:contracts ([df (or/c data-frame? grouped-data-frame?)])]{
   Returns @racket[df], except with a derived column, or multiple derived columns. If the given column is
   already present in the data-frame, it will be (immutably) overridden, and otherwise it will be created.
 
