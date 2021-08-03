@@ -62,8 +62,8 @@
 (define pivot-wider-2-result
   (row-df [day hour a  b]
           1    10   83 78
-          1    11   80 105
           2    10   95 77
+          1    11   80 105
           2    11   96 99))
 
 (module+ test

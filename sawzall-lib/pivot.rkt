@@ -63,11 +63,6 @@
 (define (pivot-wider df #:names-from name-from #:values-from value-from)
   (define split (split-with-possibility df name-from))
 
-  ; induce keys that we can merge on
-  (for ([v (in-vector split)])
-    (define cnt (df-row-count (cdr v)))
-    (df-add-series! (cdr v) (make-series "join-on" #:data (build-vector cnt (λ (x) x)))))
-
   (define to-ljoin
     (for/list ([on-possibility (in-vector split)])
       (define val (car on-possibility))
@@ -80,8 +75,6 @@
   (define return-df
     (for/fold ([d (first to-ljoin)])
               ([v (in-list (rest to-ljoin))])
-      (left-join v d "join-on")))
+      (left-join v d)))
 
-  ; remove the keys to merge on
-  (df-del-series! return-df "join-on")
   return-df)
