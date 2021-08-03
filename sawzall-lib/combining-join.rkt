@@ -81,6 +81,10 @@
         (shared-series (list df1 df2))
         by-int))
 
+  (when (null? by)
+    (error 'combining-join "no shared series between merge
+please use rename to make some shared columns first"))
+
   (define df1-grouped (apply group-with df1 by))
   (define df2-grouped (apply group-with df2 by))
   (define df1-sorted (grouped-data-frame-delegate-frame df1-grouped))
