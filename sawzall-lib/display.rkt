@@ -19,8 +19,8 @@
 (define *show-cols-default* 6)
 
 (define (take* lst n)
-  (cond [(zero? n) lst]
-        [(empty? lst) lst]
+  (cond [(zero? n) empty]
+        [(empty? lst) empty]
         [else (cons (first lst)
                     (take* (rest lst) (sub1 n)))]))
 
@@ -76,6 +76,7 @@
               v)))))
 
   (when (not (or all? (and (= n-rows row-cap) (= n-cols col-cap))))
-    (printf "~a rows, ~a cols elided (use #:all? for full frame)~n"
+    (printf "~a rows, ~a cols elided
+(use (show df everything #:n-rows 'all) for full frame)~n"
             (- n-rows row-cap)
             (- n-cols col-cap))))
