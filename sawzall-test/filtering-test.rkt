@@ -51,6 +51,26 @@
           "sam"  "jam" 30
           "sam"  "son" 10))
 
+;; deduplicating
+(define deduplicate-1 (deduplicate ball1 first))
+(define deduplicate-1-result
+  (row-df [first last  age]
+          "sam"  "son" 10
+          "bob"  "ert" 20
+          "dan"  "man" 40))
+
+(define deduplicate-2
+  (~> docs1
+      (group-with "grp")
+      (deduplicate trt)
+      ungroup))
+(define deduplicate-2-result
+  (row-df [grp trt adult juv]
+          "a"  "a" 1     10
+          "a"  "b" 2     20
+          "b"  "a" 3     30
+          "b"  "b" 4     40))
+
 ;; filtering gss
 (define-runtime-path where-gss-1-data "./results/where_gss_1.csv")
 (define where-gss-1 (where gss-sm (bigregion) (string=? bigregion "Northeast")))
@@ -92,6 +112,9 @@
   (check data-frame~=? where-4 where-4-result)
   (check data-frame~=? where-5 where-5-result)
   (check data-frame~=? where-6 where-6-result)
+
+  (check data-frame~=? deduplicate-1 deduplicate-1-result)
+  (check data-frame~=? deduplicate-2 deduplicate-2-result)
 
   (check-csv where-gss-1 where-gss-1-data)
   (check-true (df-contains-only? where-gss-1 "bigregion" "Northeast"))

@@ -33,4 +33,4 @@
          (all-from-out "separate.rkt")
          (all-from-out "slice.rkt")
          split-with combine
-         where where*)
+         where where* deduplicate)

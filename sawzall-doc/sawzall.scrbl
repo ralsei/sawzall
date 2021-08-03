@@ -242,6 +242,27 @@ This operation subsets a data frame, returning rows which satisfy a given condit
   ]
 }
 
+@defform[(deduplicate df column-name ...)
+         #:contracts ([df (or/c data-frame? grouped-data-frame?)])]{
+  Returns @racket[df], except all combinations of each @racket[column-name] will not be duplicated.
+  respects groups, so if the data-frame is grouped, each group will be deduplicated, not the entire
+  frame.
+
+  Note that this is with respect to combinations of the input @racket[column-name]s: so
+  @racket[(deduplicate df col1 col2)] is not the same as
+  @racket[(deduplicate (deduplicate df col2) col1)].
+
+  @examples[#:eval ev
+    (~> example-df
+        (deduplicate trt)
+        show)
+    (~> example-df
+        (group-with "grp")
+        (deduplicate trt)
+        show)
+  ]
+}
+
 @section[#:tag "slice"]{Slicing}
 
 This operation subsets a data frame, returning columns specified by a smaller expression language.

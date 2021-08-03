@@ -4,11 +4,13 @@
          fancy-app
          racket/contract/base
          racket/match
+         racket/set
          syntax/parse/define
          "grouped-df.rkt"
          "grouping.rkt"
          "syntax.rkt")
-(provide where where* where/int)
+(provide where where* deduplicate
+         where/int)
 
 (define-syntax (where stx)
   (row-syntax-form stx #'where/int))
@@ -39,3 +41,18 @@
          (match (list name ...)
            [(list pat ...) #t]
            [_ #f])))
+
+(define-syntax-parse-rule (deduplicate df fld:id ...+)
+  #:declare df (expr/c #'(or/c data-frame? grouped-data-frame?))
+  (grouped-df-apply
+   (λ (sub-df)
+     (define seen-set (mutable-set))
+     (define (seen? v) (set-member? seen-set v))
+     (define (add-seen v) (set-add! seen-set v))
+     (define (filter-seen v)
+       (cond
+         [(seen? v) #f]
+         [else (add-seen v) #t]))
+     (where/int sub-df (row-proc (list (symbol->string 'fld) ...)
+                                 (λ (fld ...) (filter-seen (list fld ...))))))
+   df.c))
