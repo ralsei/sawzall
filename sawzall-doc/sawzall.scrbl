@@ -583,6 +583,52 @@ These joins combine variables from the two input data-frames.
   ]
 }
 
+@subsection{Filtering joins}
+
+These joins take columns from the first argument that match some condition on the second argument.
+
+@defproc[(semi-join [df1 (or/c data-frame? grouped-data-frame?)]
+                    [df2 (or/c data-frame? grouped-data-frame?)]
+                    [by string?] ...)
+         (or/c data-frame? grouped-data-frame?)]{
+  Returns a new data-frame, consisting of rows in @racket[df1] which have matching rows in @racket[df2],
+  keeping only columns from @racket[df1].
+
+  Unlike an inner join, a semi join will never duplicate rows of @racket[df1], whereas an inner join will
+  duplicate rows of @racket[df1] for each matching row in @racket[df2].
+
+  If @racket[by] is not specified, it defaults to all the common columns in @racket[df1] and
+  @racket[df2], in an unspecified order.
+
+  If there are no matches between the rows of @racket[df1] and @racket[df2], @racket[semi-join] will
+  error.
+
+  @examples[#:eval ev
+    (~> woodland1
+        (semi-join woodland2)
+        show)
+  ]
+}
+
+@defproc[(anti-join [df1 (or/c data-frame? grouped-data-frame?)]
+                    [df2 (or/c data-frame? grouped-data-frame?)]
+                    [by string?] ...)
+         (or/c data-frame? grouped-data-frame?)]{
+  Returns a new data-frame, consiting of rows in @racket[df1] which do not have matching rows in @racket[df2],
+  keeping only columns from @racket[df1].
+
+  If @racket[by] is not specified, it defaults to all the common columns in @racket[df1] and
+  @racket[df2], in an unspecified order.
+
+  If all the rows of @racket[df1] and @racket[df2] match, @racket[anti-join] will error.
+
+  @examples[#:eval ev
+    (~> woodland1
+        (anti-join woodland2)
+        show)
+  ]
+}
+
 @section[#:tag "reorder"]{Sorting}
 
 These operations are related to sorting data-frames.

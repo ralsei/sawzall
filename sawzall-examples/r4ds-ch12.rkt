@@ -1,5 +1,6 @@
 #lang racket
 (require data-frame
+         graphite
          sawzall
          threading)
 
@@ -30,8 +31,6 @@
       (separate "sex-age"
                 #:into '("sex" "age")
                 #:separator 1)))
-
-(require graphite)
 
 (~> who
     (where* (country) ("Afghanistan"))

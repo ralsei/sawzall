@@ -40,6 +40,8 @@ please use rename to make some shared columns first"))
   (let loop ([df1-idx 0] [df2-idx 0] [dfs '()])
     (cond [(>= df1-idx df1-len)
            ; we've run out of vector to use, so return the final df
+           (when (null? dfs)
+             (error 'join "no data-frames to combine (are you using a semi-join with no matches?)"))
            (apply combine (reverse dfs))]
           [(>= df2-idx df2-len)
            ; we've run out of the second vector. this varies between joins

@@ -4,6 +4,7 @@
          "constructors.rkt"
          "create.rkt"
          "display.rkt"
+         "filtering-join.rkt"
          "grouped-df.rkt"
          "grouping.rkt"
          "helpers.rkt"
@@ -22,6 +23,7 @@
          (all-from-out "constructors.rkt")
          (all-from-out "create.rkt")
          (all-from-out "display.rkt")
+         (all-from-out "filtering-join.rkt")
          grouped-data-frame?
          group-with ungroup-once ungroup
          orderable? orderable<?
