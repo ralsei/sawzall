@@ -18,7 +18,7 @@
          "where.rkt")
 
 (provide (all-from-out "aggregate.rkt")
-         (all-from-out "combining-join.rkt")
+         left-join right-join inner-join full-join
          (all-from-out "constructors.rkt")
          (all-from-out "create.rkt")
          (all-from-out "display.rkt")

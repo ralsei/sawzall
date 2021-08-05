@@ -4,6 +4,7 @@
          racket/match)
 (provide (struct-out ivl)
          df-select/sub
+         df-select*/sub
          in-data-frame/sub
          in-data-frame/list/sub
          df-dumb-copy/sub
@@ -28,6 +29,10 @@
 (define (df-select/sub dfl series)
   (match-define (sub-data-frame df (ivl beg end)) dfl)
   (df-select df series #:start beg #:stop end))
+
+(define (df-select*/sub dfl . series)
+  (match-define (sub-data-frame df (ivl beg end)) dfl)
+  (apply df-select* df #:start beg #:stop end series))
 
 (define (in-data-frame/sub dfl . series)
   (match-define (sub-data-frame df (ivl beg end)) dfl)

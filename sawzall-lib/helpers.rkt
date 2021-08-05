@@ -6,6 +6,7 @@
          "grouped-df.rkt")
 (provide ? λ?
          possibilities
+         vector-has-duplicates?
          vector-reorder
          vector-reorder!
          df-na-value
@@ -33,6 +34,14 @@
                #:unless (set-member? seen v))
     (set-add! seen v)
     v))
+
+; determines if a vector has duplicates
+(define (vector-has-duplicates? vec)
+  (define seen (mutable-set))
+  (not
+   (for/and ([v (in-vector vec)])
+     (and (not (set-member? seen v))
+          (set-add! seen v)))))
 
 ; determines the possible values that a given data-frame has in a column
 (define (possibilities data group #:ivl [iv #f])

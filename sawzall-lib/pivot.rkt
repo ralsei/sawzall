@@ -9,6 +9,9 @@
          racket/vector
          syntax/parse/define
          "combining-join.rkt"
+         "generic-join.rkt"
+         "grouped-df.rkt"
+         "helpers.rkt"
          "rename.rkt"
          "slice-spec.rkt"
          "split.rkt")
@@ -58,6 +61,32 @@
 
   return-df)
 
+;; like a left join, except it's less permissive with duplicates
+(define (pivot-wider-join-matches df1 df2 by)
+  (define df1-int (sub-data-frame-delegate-frame df1))
+  (define df2-int (sub-data-frame-delegate-frame df2))
+
+  (when (or (vector-has-duplicates? (apply df-select*/sub df1 (df-series-names df1-int)))
+            (vector-has-duplicates? (apply df-select*/sub df2 (df-series-names df2-int))))
+    (error 'pivot-wider "duplicate identifiers for rows: need more information"))
+
+  (join-matches df1 df2 by))
+
+(define pivot-wider-join
+  (generic-join
+   #:on-= (λ (df1 df2 by acc) (cons (pivot-wider-join-matches df1 df2 by) acc))
+   ; if df2 ends, keep adding #f
+   #:on-end
+   (λ (df1 df2-names acc)
+     (cons (join-no-matches df1 df2-names) acc))
+   ; if df1 < df2, pad with #f
+   #:on-<
+   (λ (df1 df2-names acc)
+     (cons (join-no-matches df1 df2-names) acc))
+   ; if df1 > df2, do nothing
+   #:on->
+   (λ (df1-names df2 acc) acc)))
+
 ; widens data, decreasing the number of rows and increasing the number of columns
 ; XXX: this is not particularly efficient, but intuitive. should see what dplyr does
 (define (pivot-wider df #:names-from name-from #:values-from value-from)
@@ -75,6 +104,6 @@
   (define return-df
     (for/fold ([d (first to-ljoin)])
               ([v (in-list (rest to-ljoin))])
-      (left-join v d)))
+      (pivot-wider-join v d)))
 
   return-df)
