@@ -405,6 +405,9 @@ regular operations.
   which binds the entire column. If a type for a bound variable is not specified, it defaults to
   @racket[element].
 
+  The binding structure of @racket[create] is like @racket[let*]: columns can depend on those coming in previous
+  clauses, but not the other way around.
+
   If every bound variable in a given column specification is of type @racket[vector], it is expected that
   @racket[body] produces a vector of the same length as all other columns. Otherwise, it is expected that
   @racket[body] produces some quantity, and it will be mapped over every column specified by variables of type
@@ -454,6 +457,9 @@ based on a vectorized operation.
   The bound variables in @racket[body] are specified by @racket[bound-column]. Unlike @racket[create], all
   variables bound in @racket[body] are the entirety of the column as a vector. @racket[body] is expected to
   produce a single value, which is the "aggregation" of that vector.
+
+  The binding structure of @racket[aggregate] is like @racket[let]: all @racket[bound-columns] come from
+  @racket[df].
 
   If the input is a grouped data-frame, the last layer of grouping will be implicitly removed after
   aggregating.

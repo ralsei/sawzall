@@ -26,7 +26,8 @@
       ;; create a column so we don't have any duplicates, and pivot-wider knows
       ;; what to bind on
       ;;
-      ;; this could be better -- without this it errors silently, at least right now.
+      ;; if we don't do this, pivot-wider will complain about insufficient information
+      ;; to join on
       (create [nrow ([x1 : vector]) (build-vector (vector-length x1) (λ (x) x))])
       ;; take every column but nrow,
       ;; names to a new column called "name" and the values to a new column called "val"
@@ -64,6 +65,7 @@
        ;; use "x" for x and "y" for y, facet on "quadrant",
        #:mapping (aes #:x "x" #:y "y" #:facet "quadrant")
        #:width 800 #:height 800
+       #:title "Anscombe's Quartet"
        ;; and draw points and a linear fit line
        (points)
        (fit #:width 3))
