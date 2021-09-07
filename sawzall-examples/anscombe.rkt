@@ -39,6 +39,7 @@
       ;; take the column "x-or-y", and take all the "x" values and make them a column,
       ;; then the "y" values and make them a column
       (pivot-wider #:names-from "x-or-y" #:values-from "val")
+      (introspect everything)
       ;; remove the column we built at the start
       (slice (not "nrow"))))
 

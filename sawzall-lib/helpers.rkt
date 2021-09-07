@@ -23,10 +23,6 @@
 (define ((λ? fn) . args)
   (apply ? fn args))
 
-; determines the NA value in a given df series
-(define (df-na-value df col)
-  (series-na (df-duplicate-series df col)))
-
 ; removes duplicates from a given vector
 (define (vector-remove-duplicates vec)
   (define seen (mutable-set))
