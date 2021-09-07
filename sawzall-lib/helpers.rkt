@@ -9,7 +9,6 @@
          vector-has-duplicates?
          vector-reorder
          vector-reorder!
-         df-na-value
          shared-series
          lexicographic-vector<?
          orderable?
