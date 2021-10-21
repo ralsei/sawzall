@@ -1,0 +1,47 @@
+#+TITLE: Outline
+
+* Introduction
+** Hi, I'm Hazel
+** Sawzall is...
+** Tidy data is...
+*** This is the key thing we abstract over to make Sawzall work
+* GSS example
+** General Social Survey, 2016 data, individual-level preferences
+** Idea of what we want to do:
+*** Get percent religious preference by census region
+**** What % of people in the Midwest are Catholic (in this data)?
+*** Accomplishing this
+**** Start with individual level data
+**** Then, get the count of each religion within each region
+**** Finally, turn those counts into percentages
+** Doing that with Sawzall
+*** Start with the threading library
+*** Group with respect to bigregion, and religion
+*** Then, summarize each religion into just the count of the number of observations
+*** Finally, turn those into frequencies, and turn the resulting frequencies into percentages
+*** Graph it
+* Basic wrangling operators
+** aggregate [fold], create [map], where [filter], slice [also filter]
+** All of these seamlessly compose with ~>
+** It's natural to want to express operations in groups
+*** This works in threading by transporting to a grouped data structure
+* Billboard example
+** A la Scheme 2021
+** Why do we care about untidy data?
+* Basic tidying operators
+** pivots, nesting, separating
+** These compose with wrangling operators to make a seamless pipeline
+* The approach (implementation)
+** Macros!
+** Racket is really good at figuring out what you want to write, and then making it work
+*** A lot of these operators have their own DSLs (like slice)
+*** These DSLs are implemented using syntax classes, which whip ass
+* Current uses, and future directions
+** Processing small, in-memory datasets is relatively ergonomic
+*** Most of the book /R for Data Science/, by Hadley Wickham, can be completed
+*** ...but performance could be better
+** I made this whole other library for making visualizations
+*** There's a Scheme talk and a tutorial about that
+** "Abstracting" from a data-frame
+*** Could use a different style of storing data, or a different library
+*** Could interface with a real database (though this would be inefficient)
