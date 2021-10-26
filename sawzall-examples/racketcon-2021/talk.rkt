@@ -552,13 +552,125 @@
        (pin-arrow-line
         20 p
         (find-tag p 'orig-df) rc-find
-        (find-tag p 'wrangled-df) lc-find)))))
+        (find-tag p 'wrangled-df) lc-find
+        #:label
+        (typeset-code
+         (case stage-name
+           [(no-group)
+            #'(~> example-df
+                  code:blank
+                  (aggregate [adult-sum (adult) (sum adult)]
+                             [juv-sum (juv) (sum juv)]))]
+           [(one-group)
+            #'(~> example-df
+                  (group-with "grp")
+                  (aggregate [adult-sum (adult) (sum adult)]
+                             [juv-sum (juv) (sum juv)]))]
+           [(two-group)
+            #'(~> example-df
+                  (group-with "grp" "trt")
+                  (aggregate [adult-sum (adult) (sum adult)]
+                             [juv-sum (juv) (sum juv)]))])))))))
 
 (define (tidying-operators-slides)
-  (pslide (text "TODO")))
+  (with-text-style
+    #:defaults [#:face *global-font*]
+    ([title #:size 50 #:bold? #t]
+     [titleit #:size 50 #:bold? #t #:italic? #t]
+     [titlett #:size 50 #:bold? #t #:face *mono-font*]
+     [t #:size 25]
+     [tt #:size 25 #:face *mono-font*]
+     [tit #:size 25 #:italic? #t]
+     [ti #:size 25
+         #:transform (λ (p) (t #:h-append hc-append #:left-pad 30 "• " p))]
+     [cred #:size 10])
+
+    (pslide/staged
+     [pivot-s unnest-s separate-s sort-s]
+     #:go (coord 0.05 0.05 'lt)
+     @title{Tidying operators}
+     #:go (coord 0.05 0.2 'lt)
+     (vl-append
+      (current-line-sep)
+      (pict:show
+       @ti{@tt{pivot}: changes the shape of the data to be longer or wider}
+       (at/after pivot-s))
+      (pict:show
+       @ti{@tt{unnest}: spreads nested structure (like lists) into multiple variables}
+       (at/after unnest-s))
+      (pict:show
+       @ti{@tt{separate}: spreads strings into multiple variables}
+       (at/after separate-s))
+      (pict:show
+       @ti{@tt{reorder}: sorts the data according to some variable/comparator}
+       (at/after sort-s))))))
+
+(define (implementation-details-slides)
+  (with-text-style
+    #:defaults [#:face *global-font*]
+    ([title #:size 50 #:bold? #t]
+     [titleit #:size 50 #:bold? #t #:italic? #t]
+     [titlett #:size 50 #:bold? #t #:face *mono-font*]
+     [t #:size 25]
+     [tt #:size 25 #:face *mono-font*]
+     [tit #:size 25 #:italic? #t]
+     [ti #:size 25
+         #:transform (λ (p) (t #:h-append hc-append #:left-pad 30 "• " p))]
+     [cred #:size 10])
+    (pslide
+     #:go (coord 0.05 0.05 'lt)
+     @title{Under the hood: macros, macros everywhere}
+     (vl-append
+      (current-line-sep)
+      @ti{Most of Sawzall's individual operators are macros}
+      @ti{All operations are either @tt{data-frame? -> data-frame?}, or a wrapper structure}
+      @ti{The consistency of operations without side-effects means that operations compose with @tt{~>}}
+      @ti{Racket is really good at writing down what you want to write, and figuring it out later}))
+    (pslide
+     #:go (coord 0.05 0.05 'lt)
+     @title{Under the hood: syntax class DSLs}
+     (vl-append
+      (current-line-sep)
+      @ti{Racket preaches language-oriented programming, but what if you want languages @tit{inside} @tt{#lang racket}?}
+      @ti{@tit{Syntax classes} (from @tt{syntax/parse}) let you parse embedded DSLs at compile-time}
+      @ti{Sawzall uses these extensively for various operators which speak their own language (namely @tt{slice})}))))
 
 (define (uses-directions-slides)
-  (pslide (text "TODO")))
+  (with-text-style
+    #:defaults [#:face *global-font*]
+    ([title #:size 50 #:bold? #t]
+     [titleit #:size 50 #:bold? #t #:italic? #t]
+     [titlett #:size 50 #:bold? #t #:face *mono-font*]
+     [t #:size 25]
+     [tt #:size 25 #:face *mono-font*]
+     [tit #:size 25 #:italic? #t]
+     [ti #:size 25
+         #:transform (λ (p) (t #:h-append hc-append #:left-pad 30 "• " p))]
+     [cred #:size 10])
+    (pslide
+     #:go (coord 0.05 0.05 'lt)
+     @title{What's Sawzall already good for?}
+     (vl-append
+      (current-line-sep)
+      @ti{Processing small, in-memory datasets
+          already works very well}
+      @ti{Basic data science tasks can be completed,
+          including most of Hadley Wickham's book
+          @tit{R for Data Science}}
+      @ti{There's a whole other library for visualization
+          (and a Scheme workshop talk about it)}
+      ;; pretty picture here
+      ))
+    (pslide
+     #:go (coord 0.05 0.05 'lt)
+     @title{Future directions}
+     (vl-append
+      (current-line-sep)
+      @ti{Feature parity with R/tidyverse is a non-goal}
+      @ti{Performance still leaves a lot to be desired}
+      @ti{Currently dependent on Alex Harsanyi's @tt{data-frame} library, though it could be abstracted away from it}
+      (hc-append (ghost (filled-rectangle 50 25))
+                 @ti{This could be a generic interface, possibly interfacing with real databases})))))
 
 (define (bunch-of-plots-slide)
   (define (scale-to-4-panel p)
@@ -643,12 +755,13 @@
 ;;;; main
 (module+ main
   (title-slide)
-  (sawzall-intro-slides)
   (gss-pipeline-slides)
   (gss-example-slides)
+  (sawzall-intro-slides)
   (basic-operators-slides)
   (billboard-example-slides)
   (tidying-operators-slides)
+  (implementation-details-slides)
   (uses-directions-slides)
   (bunch-of-plots-slide)
   )
