@@ -1,5 +1,7 @@
 #lang at-exp slideshow
-(require data-frame
+(require colormaps
+         data-frame
+         file/gunzip
          graphite
          math/statistics
          (except-in pict/conditional show)
@@ -130,6 +132,14 @@
           12  12 12 8  10.84 9.13 8.15  5.56
           7   7  7  8  4.82  7.26 6.42  7.91
           5   5  5  8  5.68  4.74 5.73  6.89))
+(define flights
+  (let ()
+    (define data
+      (call-with-output-string
+       (λ (out)
+         (call-with-input-file "../data/flights.csv.gz"
+           (λ (in) (gunzip-through-ports in out))))))
+    (call-with-input-string data (curry df-read/csv #:na "NA"))))
 
 ;;;; actual slides
 (define (title-slide)
@@ -613,6 +623,7 @@
      [titlett #:size 50 #:bold? #t #:face *mono-font*]
      [t #:size 25]
      [tt #:size 25 #:face *mono-font*]
+     [tts #:size 15 #:face *mono-font*]
      [tit #:size 25 #:italic? #t]
      [ti #:size 25
          #:transform (λ (p) (t #:h-append hc-append #:left-pad 30 "• " p))]
@@ -620,12 +631,44 @@
     (pslide
      #:go (coord 0.05 0.05 'lt)
      @title{Under the hood: macros, macros everywhere}
+     #:go (coord 0.05 0.2 'lt)
      (vl-append
       (current-line-sep)
       @ti{Most of Sawzall's individual operators are macros}
       @ti{All operations are either @tt{data-frame? -> data-frame?}, or a wrapper structure}
       @ti{The consistency of operations without side-effects means that operations compose with @tt{~>}}
-      @ti{Racket is really good at writing down what you want to write, and figuring it out later}))
+      @ti{Racket is really good at writing down what you want to write, and figuring it out later})
+     #:go (coord 0.13 0.6 'lt)          ; SCREAMS
+     (code
+      (~> #,(tag-pict (code by-word) 'init)
+          #,(tag-pict (code (group-with "word")) 'grouping)
+          #,(tag-pict (code (aggregate [count-sum (count) (sum count)])) 'aggregating)
+          (reorder (cons "count-sum" >))
+          (take-rows 0 20)))
+     #:set
+     (let ([p ppict-do-state])
+       (pin-arrow-line
+        20 p
+        (find-tag p 'init) rc-find
+        (find-tag p 'grouping) rc-find
+        #:start-angle 0
+        #:end-angle pi
+        #:start-pull 1.5
+        #:label @tts{data-frame? -> grouped-data-frame?}
+        #:x-adjust-label 615
+        #:y-adjust-label (/ 25 2)))
+     #:set
+     (let ([p ppict-do-state])
+       (pin-arrow-line
+        20 p
+        (find-tag p 'grouping) rc-find
+        (find-tag p 'aggregating) rc-find
+        #:start-angle 0
+        #:end-angle pi
+        #:start-pull 1.5
+        #:label @tts{grouped-data-frame? -> data-frame?}
+        #:x-adjust-label 400
+        #:y-adjust-label (/ 25 2))))
     (pslide
      #:go (coord 0.05 0.05 'lt)
      @title{Under the hood: syntax class DSLs}
@@ -633,9 +676,20 @@
       (current-line-sep)
       @ti{Racket preaches language-oriented programming, but what if you want languages @tit{inside} @tt{#lang racket}?}
       @ti{@tit{Syntax classes} (from @tt{syntax/parse}) let you parse embedded DSLs at compile-time}
-      @ti{Sawzall uses these extensively for various operators which speak their own language (namely @tt{slice})}))))
+      @ti{Sawzall uses these extensively for various operators which speak their own language (namely @tt{slice})}))
+    (pslide (t "TODO: example"))))
 
 (define (uses-directions-slides)
+  (define not-cancelled
+    (~> flights
+        (where (arr_delay dep_delay) (and arr_delay dep_delay))))
+  (define delays-by-tailnum
+    (~> not-cancelled
+        (group-with "tailnum")
+        (aggregate [delay (arr_delay) (mean arr_delay)]
+                   [N (arr_delay) (vector-length arr_delay)])
+        (where (N) (> N 25))))
+
   (with-text-style
     #:defaults [#:face *global-font*]
     ([title #:size 50 #:bold? #t]
@@ -650,6 +704,7 @@
     (pslide
      #:go (coord 0.05 0.05 'lt)
      @title{What's Sawzall already good for?}
+     #:go (coord 0.05 0.2 'lt)
      (vl-append
       (current-line-sep)
       @ti{Processing small, in-memory datasets
@@ -658,9 +713,15 @@
           including most of Hadley Wickham's book
           @tit{R for Data Science}}
       @ti{There's a whole other library for visualization
-          (and a Scheme workshop talk about it)}
-      ;; pretty picture here
-      ))
+          (and a Scheme workshop talk about it)})
+     #:go (coord 0.95 0.95 'rb)
+     (graph #:data delays-by-tailnum
+            #:mapping (aes #:x "N" #:y "delay")
+            #:title "Arrival delay by tail number, NYC 2013"
+            #:x-label "Tail number"
+            #:y-label "Delay on arrival (minutes)"
+            #:x-min -2 #:height 550 #:width 550
+            (points #:alpha 1/10 #:color "black")))
     (pslide
      #:go (coord 0.05 0.05 'lt)
      @title{Future directions}
@@ -754,13 +815,13 @@
 
 ;;;; main
 (module+ main
-  (title-slide)
-  (gss-pipeline-slides)
-  (gss-example-slides)
-  (sawzall-intro-slides)
-  (basic-operators-slides)
-  (billboard-example-slides)
-  (tidying-operators-slides)
+  ;; (title-slide)
+  ;; (gss-pipeline-slides)
+  ;; (gss-example-slides)
+  ;; (sawzall-intro-slides)
+  ;; (basic-operators-slides)
+  ;; (billboard-example-slides)
+  ;; (tidying-operators-slides)
   (implementation-details-slides)
   (uses-directions-slides)
   (bunch-of-plots-slide)
