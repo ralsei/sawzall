@@ -1,7 +1,7 @@
 #lang at-exp slideshow
-(require colormaps
+(require csv-reading
+         colormaps
          data-frame
-         file/gunzip
          graphite
          math/statistics
          (except-in pict/conditional show)
@@ -10,6 +10,7 @@
          pict/shadow
          ppict/2
          ppict/slideshow2
+         (except-in redex shadow)       ; sweet jesus
          sawzall
          slideshow/code
          slideshow/staged-slide
@@ -25,9 +26,10 @@
 
 (sawzall-show-formatter
  (λ (val)
-   (if (rational? val)
-       (~r val #:precision 3)
-       (~a val))))
+   (cond [(rational? val) (~r val #:precision 3)]
+         [(hash? val) "#<hash>"]
+         [(vector? val) "#<vector>"]
+         [else (~a val)])))
 
 ;;;; helper functions
 (define (frame p)
@@ -109,6 +111,15 @@
                       [_ (in-range (if no-header? 15 16))]) ; hack to hide help text
              (mono d)))))
 
+(define (strip-punctuation str)
+  (string-normalize-spaces (regexp-replace* #px"[.,/#!$%\\^&\\*;:{}=\\-_`~()\"\"\\?]" str " ")))
+
+(define (get-frequency lst)
+  (define frequencies (make-hash))
+  (for ([v (in-list lst)])
+    (hash-update! frequencies v add1 0))
+  frequencies)
+
 ;;;; data
 ;;;; likely that some of this is unused by the time the talk rolls around
 (define gapminder (df-read/csv "../data/all_gapminder.csv" #:na "NA"))
@@ -118,7 +129,6 @@
 (define gss-sm (rename (df-read/csv "../data/gss_sm.csv" #:na "NA") "" "id"))
 (define billboard (df-read/csv "../data/billboard.csv" #:na "NA"))
 (define organdata (df-read/csv "../data/organdata.csv" #:na "NA"))
-(define midwest (df-read/csv "../data/midwest.csv" #:na "NA"))
 (define anscombe
   (row-df [x1 x2 x3 x4 y1    y2   y3    y4]
           10  10 10 8  8.04  9.14 7.46  6.58
@@ -132,14 +142,9 @@
           12  12 12 8  10.84 9.13 8.15  5.56
           7   7  7  8  4.82  7.26 6.42  7.91
           5   5  5  8  5.68  4.74 5.73  6.89))
-(define flights
-  (let ()
-    (define data
-      (call-with-output-string
-       (λ (out)
-         (call-with-input-file "../data/flights.csv.gz"
-           (λ (in) (gunzip-through-ports in out))))))
-    (call-with-input-string data (curry df-read/csv #:na "NA"))))
+(define flights (df-read/csv "../data/flights.csv" #:na "NA"))
+(define taylor-lyrics (df-read/csv "../data/taylor_swift_lyrics.csv"))
+(define stop-words (apply set (first (call-with-input-file "../data/stop-words.csv" csv->list))))
 
 ;;;; actual slides
 (define (title-slide)
@@ -487,17 +492,17 @@
        @ti{@tt{create}: adds new variables, dependent on existing variables}
        (at/after create-s))
       (pict:show
-       @ti{@tt{slice}: picks variables to retain based on their names}
+       @ti{@tt{slice}: picks columns to retain based on their names}
        (at/after slice-s))
       (pict:show
-       @ti{@tt{where}: picks variables to retain based on their values}
+       @ti{@tt{where}: picks rows to retain based on their values}
        (at/after where-s))
       (pict:show
        @ti{@tt{aggregate}: reduces many values down to a summary}
        (at/after aggregate-s)))
-     #:go (coord 0.15 0.45 'ct)
+     #:go (coord 0.05 0.45 'lt)
      (tag-pict (show-pict example-df #:no-header? #t) 'orig-df)
-     #:go (coord 0.85 0.45 'ct)
+     #:go (coord 0.95 0.45 'rt)
      (tag-pict
       (pict-case stage-name
                  [(create-s) (show-pict (create example-df [total (adult juv) (+ adult juv)]) #:no-header? #t)]
@@ -536,7 +541,7 @@
      (tag-pict
       (pict-case stage-name
                  [(no-group) (show-pict (~> example-df
-                                            (aggregate {adult-sum (adult) (sum adult)}
+                                            (aggregate [adult-sum (adult) (sum adult)]
                                                        [juv-sum (juv) (sum juv)]))
                                         '("adult-sum" "juv-sum")
                                         #:no-header? #t)]
@@ -583,6 +588,34 @@
                              [juv-sum (juv) (sum juv)]))])))))))
 
 (define (tidying-operators-slides)
+  (define example-df
+    (row-df [grp trt adult juv]
+            "a"  "b" 1     10
+            "a"  "b" 2     20
+            "b"  "a" 3     30
+            "b"  "b" 4     40
+            "b"  "b" 5     50))
+  (define wide-df
+    (row-df [day hour a  b]
+            1    10   97 84
+            2    11   78 47))
+  (define to-separate
+    (row-df [col]
+            #f
+            "a-b"
+            "a-d"
+            "b-c"
+            "d-e"))
+  (define deep-df
+    (column-df
+     [character #("Toothless" "Dory")]
+     [metadata
+      (vector
+       (hash 'species "dragon"
+             'color   "black")
+       (hash 'species "tang"
+             'color   "blue"))]))
+
   (with-text-style
     #:defaults [#:face *global-font*]
     ([title #:size 50 #:bold? #t]
@@ -613,7 +646,43 @@
        (at/after separate-s))
       (pict:show
        @ti{@tt{reorder}: sorts the data according to some variable/comparator}
-       (at/after sort-s))))))
+       (at/after sort-s)))
+     #:go (coord 0.05 0.45 'lt)
+     (tag-pict
+      (pict-case stage-name
+                 [(pivot-s) (show-pict wide-df #:no-header? #t)]
+                 [(unnest-s) (show-pict deep-df #:no-header? #t)]
+                 [(separate-s) (show-pict to-separate #:no-header? #t)]
+                 [(sort-s) (show-pict example-df #:no-header? #t)])
+      'orig-df)
+     #:go (coord 0.95 0.45 'rt)
+     (tag-pict
+      (pict-case stage-name #:combine rt-superimpose
+                 [(pivot-s) (show-pict (pivot-longer wide-df ["a" "b"]
+                                                     #:names-to "site" #:values-to "catch")
+                                       #:no-header? #t)]
+                 [(unnest-s) (show-pict (~> deep-df
+                                            (unnest-longer "metadata"))
+                                        #:no-header? #t)]
+                 [(separate-s) (show-pict (separate to-separate "col" #:into '("A" "B"))
+                                          #:no-header? #t)]
+                 [(sort-s) (show-pict (reorder example-df (cons "adult" >))
+                                      #:no-header? #t)])
+      'tidied-df)
+     #:set
+     (let ([p ppict-do-state])
+       (pin-arrow-line
+        20 p
+        (find-tag p 'orig-df) rc-find
+        (find-tag p 'tidied-df) lc-find
+        #:label (typeset-code
+                 (case stage-name
+                   [(pivot-s) #'(pivot-longer ["a" "b"]
+                                              #:names-to "site"
+                                              #:values-to "catch")]
+                   [(unnest-s) #'(unnest-longer "metadata")]
+                   [(separate-s) #'(separate "col" #:into '("A" "B"))]
+                   [(sort-s) #'(reorder (cons "adult" >))])))))))
 
 (define (implementation-details-slides)
   (with-text-style
@@ -669,15 +738,62 @@
         #:label @tts{grouped-data-frame? -> data-frame?}
         #:x-adjust-label 400
         #:y-adjust-label (/ 25 2))))
+
+    (define-language Slice-Spec
+      [slice-spec ::=
+                  string
+                  regexp
+                  everything
+                  [string-literal ...]
+                  (or slice-spec ...)
+                  (and slice-spec ...)
+                  (not slice-spec)
+                  (all-in str-sequence)
+                  (any-in str-sequence)
+                  (starting-with string)
+                  (ending-with string)
+                  (containing string)]
+      [str-sequence ::= (sequence/c string)]
+      [regexp ::= regexp?])
+
     (pslide
      #:go (coord 0.05 0.05 'lt)
      @title{Under the hood: syntax class DSLs}
+     #:go (coord 0.05 0.2 'lt)
      (vl-append
       (current-line-sep)
       @ti{Racket preaches language-oriented programming, but what if you want languages @tit{inside} @tt{#lang racket}?}
       @ti{@tit{Syntax classes} (from @tt{syntax/parse}) let you parse embedded DSLs at compile-time}
-      @ti{Sawzall uses these extensively for various operators which speak their own language (namely @tt{slice})}))
-    (pslide (t "TODO: example"))))
+      @ti{Sawzall uses these extensively for various operators which speak their own language (namely @tt{slice})})
+     #:go (coord 0.5 0.95 'cb)
+     (parameterize ([default-font-size 20])
+       (language->pict Slice-Spec)))
+
+    (pslide
+     (code
+      (begin-for-syntax
+        (define-syntax-class slice-spec
+          #:attributes (parsed)
+          #:literals (everything
+                      starting-with ending-with containing
+                      #,(tit  "... etc ..."))
+          [pattern everything
+                   #:with parsed #'(everything$)]
+          [pattern (starting-with prefix)
+                   #:declare prefix (expr/c #'string?)
+                   #:with parsed #'(starting-with$ prefix.c)]
+          [pattern (ending-with suffix)
+                   #:declare suffix (expr/c #'string?)
+                   #:with parsed #'(ending-with$ suffix.c)]
+          [pattern (containing substr)
+                   #:declare substr (expr/c #'string?)
+                   #:with parsed #'(containing$ substr.c)]
+          #,(tit "... etc ...")
+          [pattern [var:string ...+]
+                   #:with parsed #'(multi-var$ (list var ...))]
+          [pattern var
+                   #:declare var (expr/c #'(or/c string? regexp?))
+                   #:with parsed #'var.c]))))))
 
 (define (uses-directions-slides)
   (define not-cancelled
@@ -709,6 +825,7 @@
       (current-line-sep)
       @ti{Processing small, in-memory datasets
           already works very well}
+      @ti{Basic relational processing (joins) work}
       @ti{Basic data science tasks can be completed,
           including most of Hadley Wickham's book
           @tit{R for Data Science}}
@@ -725,10 +842,12 @@
     (pslide
      #:go (coord 0.05 0.05 'lt)
      @title{Future directions}
+     #:go (coord 0.05 0.2 'lt)
      (vl-append
       (current-line-sep)
       @ti{Feature parity with R/tidyverse is a non-goal}
       @ti{Performance still leaves a lot to be desired}
+      @ti{Works well when working with one data-frame, but could work better with joins and other relations}
       @ti{Currently dependent on Alex Harsanyi's @tt{data-frame} library, though it could be abstracted away from it}
       (hc-append (ghost (filled-rectangle 50 25))
                  @ti{This could be a generic interface, possibly interfacing with real databases})))))
@@ -748,21 +867,29 @@
             #:legend-anchor 'no-legend
             (col #:mapping (aes #:discrete-color "hi_lo")))))
 
-  (define anscombe-facetable
-    (~> anscombe
-        (create [nrow ([x1 : vector]) (build-vector (vector-length x1) (λ (x) x))])
-        (pivot-longer (not "nrow") #:names-to "name" #:values-to "val")
-        (separate "name" #:into '("x-or-y" "quadrant") #:separator 1)
-        (pivot-wider #:names-from "x-or-y" #:values-from "val")
-        (slice (not "nrow"))))
-  (define anscombe-plot
+  (define taylor-lyrics-plot
     (scale-to-4-panel
-     (graph #:data anscombe-facetable
-            #:mapping (aes #:x "x" #:y "y" #:facet "quadrant")
-            #:width 600 #:height 470    ; weh
-            #:title "Anscombe's Quartet"
-            (points)
-            (fit #:width 3))))
+     (~> taylor-lyrics
+         (group-with "album" "track_title")
+         (aggregate [lyrics (lyric) (string-join (vector->list (vector-map ~a lyric)) " ")])
+         ungroup
+         (create [lyrics (lyrics) (get-frequency (string-split (string-downcase (strip-punctuation lyrics))))])
+         (unnest-longer "lyrics"
+                        #:keys-to "word"
+                        #:values-to "count"
+                        #:remove? #t)
+         (where (word) (not (set-member? stop-words word)))
+         (group-with "word")
+         (aggregate [count-sum (count) (sum count)])
+         (reorder (cons "count-sum" >))
+         (take-rows 0 15)
+         (graph #:data _
+                #:mapping (aes #:x "word" #:y "count-sum")
+                #:title "Common words in Taylor Swift lyrics"
+                #:x-label "Word"
+                #:y-label "Count"
+                #:width 600 #:height 400
+                (col)))))
 
   (define another-gss-plot
     (scale-to-4-panel
@@ -796,7 +923,7 @@
      [no-box yes-box]
      #:go (tile 2 2)
      oecd-plot
-     anscombe-plot
+     taylor-lyrics-plot
      another-gss-plot
      organdata-plot
      #:go (coord 0.5 0.5 'cc)
@@ -815,13 +942,13 @@
 
 ;;;; main
 (module+ main
-  ;; (title-slide)
-  ;; (gss-pipeline-slides)
-  ;; (gss-example-slides)
-  ;; (sawzall-intro-slides)
-  ;; (basic-operators-slides)
-  ;; (billboard-example-slides)
-  ;; (tidying-operators-slides)
+  (title-slide)
+  (gss-pipeline-slides)
+  (gss-example-slides)
+  (sawzall-intro-slides)
+  (basic-operators-slides)
+  (billboard-example-slides)
+  (tidying-operators-slides)
   (implementation-details-slides)
   (uses-directions-slides)
   (bunch-of-plots-slide)
