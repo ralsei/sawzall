@@ -628,6 +628,9 @@
          #:transform (λ (p) (t #:h-append hc-append #:left-pad 30 "• " p))]
      [cred #:size 10])
 
+    (define (readj i si)
+      (si i (ghost (show-pict example-df #:no-header? #t))))
+
     (pslide/staged
      [pivot-s unnest-s separate-s sort-s]
      #:go (coord 0.05 0.05 'lt)
@@ -648,33 +651,51 @@
        @ti{@tt{reorder}: sorts the data according to some variable/comparator}
        (at/after sort-s)))
      #:go (coord 0.05 0.45 'lt)
-     (tag-pict
-      (pict-case stage-name
-                 [(pivot-s) (show-pict wide-df #:no-header? #t)]
-                 [(unnest-s) (show-pict deep-df #:no-header? #t)]
-                 [(separate-s) (show-pict to-separate #:no-header? #t)]
-                 [(sort-s) (show-pict example-df #:no-header? #t)])
-      'orig-df)
+     (pict-case stage-name
+                [(pivot-s)
+                 (tag-pict (readj (show-pict wide-df #:no-header? #t) rc-superimpose)
+                           'pivot-s-orig)]
+                [(unnest-s)
+                 (tag-pict (readj (show-pict deep-df #:no-header? #t) rc-superimpose)
+                           'unnest-s-orig)]
+                [(separate-s) (tag-pict (readj (show-pict to-separate #:no-header? #t) rc-superimpose)
+                                        'separate-s-orig)]
+                [(sort-s) (tag-pict (readj (show-pict example-df #:no-header? #t) rc-superimpose)
+                                    'sort-s-orig)])
      #:go (coord 0.95 0.45 'rt)
-     (tag-pict
-      (pict-case stage-name #:combine rt-superimpose
-                 [(pivot-s) (show-pict (pivot-longer wide-df ["a" "b"]
-                                                     #:names-to "site" #:values-to "catch")
-                                       #:no-header? #t)]
-                 [(unnest-s) (show-pict (~> deep-df
-                                            (unnest-longer "metadata"))
-                                        #:no-header? #t)]
-                 [(separate-s) (show-pict (separate to-separate "col" #:into '("A" "B"))
-                                          #:no-header? #t)]
-                 [(sort-s) (show-pict (reorder example-df (cons "adult" >))
-                                      #:no-header? #t)])
-      'tidied-df)
+     (pict-case stage-name #:combine rt-superimpose
+                [(pivot-s) (tag-pict
+                            (readj
+                             (show-pict (pivot-longer wide-df ["a" "b"]
+                                                      #:names-to "site" #:values-to "catch")
+                                        #:no-header? #t)
+                             lc-superimpose)
+                            'pivot-s-tidy)]
+                [(unnest-s) (tag-pict
+                             (readj
+                              (show-pict (~> deep-df
+                                             (unnest-longer "metadata"))
+                                         #:no-header? #t)
+                              lc-superimpose)
+                             'unnest-s-tidy)]
+                [(separate-s) (tag-pict
+                               (readj
+                                (show-pict (separate to-separate "col" #:into '("A" "B"))
+                                           #:no-header? #t)
+                                lc-superimpose)
+                               'separate-s-tidy)]
+                [(sort-s) (tag-pict
+                           (readj
+                            (show-pict (reorder example-df (cons "adult" >))
+                                       #:no-header? #t)
+                            lc-superimpose)
+                           'sort-s-tidy)])
      #:set
      (let ([p ppict-do-state])
        (pin-arrow-line
         20 p
-        (find-tag p 'orig-df) rc-find
-        (find-tag p 'tidied-df) lc-find
+        (find-tag p (string->symbol (string-append (symbol->string stage-name) "-orig"))) rc-find
+        (find-tag p (string->symbol (string-append (symbol->string stage-name) "-tidy"))) lc-find
         #:label (typeset-code
                  (case stage-name
                    [(pivot-s) #'(pivot-longer ["a" "b"]
