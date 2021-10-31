@@ -535,9 +535,9 @@
       (current-line-sep)
       @ti{@tit{Idea:} a lot of data manipulation tasks happen "in groups"}
       @ti{So, we can compose existing operators with grouping to avoid repeating ourselves})
-     #:go (coord 0.15 0.45 'ct)
+     #:go (coord 0.05 0.45 'lt)
      (tag-pict (show-pict example-df #:no-header? #t) 'orig-df)
-     #:go (coord 0.85 0.45 'ct)
+     #:go (coord 0.95 0.45 'rt)
      (tag-pict
       (pict-case stage-name
                  [(no-group) (show-pict (~> example-df
