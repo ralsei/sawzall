@@ -629,7 +629,7 @@
      [cred #:size 10])
 
     (define (readj i si)
-      (si i (ghost (show-pict example-df #:no-header? #t))))
+      (si i (blank 1 (pict-height (show-pict example-df #:no-header? #t)))))
 
     (pslide/staged
      [pivot-s unnest-s separate-s sort-s]
@@ -651,7 +651,7 @@
        @ti{@tt{reorder}: sorts the data according to some variable/comparator}
        (at/after sort-s)))
      #:go (coord 0.05 0.45 'lt)
-     (pict-case stage-name
+     (pict-case stage-name #:combine rt-superimpose
                 [(pivot-s)
                  (tag-pict (readj (show-pict wide-df #:no-header? #t) rc-superimpose)
                            'pivot-s-orig)]
@@ -663,7 +663,7 @@
                 [(sort-s) (tag-pict (readj (show-pict example-df #:no-header? #t) rc-superimpose)
                                     'sort-s-orig)])
      #:go (coord 0.95 0.45 'rt)
-     (pict-case stage-name #:combine rt-superimpose
+     (pict-case stage-name #:combine lt-superimpose
                 [(pivot-s) (tag-pict
                             (readj
                              (show-pict (pivot-longer wide-df ["a" "b"]
