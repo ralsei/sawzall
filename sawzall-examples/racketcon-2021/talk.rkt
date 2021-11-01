@@ -75,7 +75,7 @@
 (define (v/ vec c) (for/vector ([v (in-vector vec)]) (if v (/ v c) #f)))
 (define (sum vec) (for/sum ([v (in-vector vec)] #:when v) v))
 
-(define (df-show-slide df name csv-file [lst #f])
+(define (df-show-slide df name csv-file [lst #f] #:logo [logo (blank)])
   (define defined-to (string->symbol (string-downcase name)))
 
   (with-text-style
@@ -89,8 +89,17 @@
       (define #,defined-to
         (df-read/csv #,(string-append "../data/" csv-file)
                      #:na "NA")))
+     #:go (coord 0.05 0.55 'lc)
+     logo
      #:go (coord 0.95 0.95 'rb)
      (show-pict df lst #:font-size 23))))
+
+(define (section-card text)
+  (pslide
+   (with-text-style
+     #:defaults [#:face *global-font*]
+     ([t #:size 100 #:bold? #t])
+     (t text))))
 
 (define (show-pict df [lst #f] #:font-size [font-size 20] #:no-header? [no-header? #f])
   (define to-show
@@ -250,8 +259,10 @@
                  (after none))))))
 
 (define (gss-pipeline-slides)
+  (define gss-logo (scale (bitmap "gss-logo.png") 0.55))
+
   (df-show-slide gss-sm "gss-sm" "gss_sm.csv"
-                 '("bigregion" "religion" "kids" "ageq" "sex" "marital"))
+                 '("bigregion" "religion" "kids" "ageq" "sex" "marital") #:logo gss-logo)
 
   (define the-arrow (cc-superimpose
                      (arrowhead 56 0)
@@ -362,12 +373,16 @@
            #:width 600 #:height 600
            (col)))
 
+  (define pencils (scale (rotate (bitmap "pencils-lol.png") (- (/ pi 2))) 0.55))
+
   (pslide
    #:go (coord 0.05 0.05 'lt)
    (code (graph #:data religion-by-region
                 #:mapping (aes #:x "religion" #:y "percent" #:facet "bigregion")
                 #:width 600 #:height 600
                 (col)))
+   #:go (coord -0.02 1.03 'lb)
+   pencils
    #:go (coord 0.95 0.95 'rb)
    the-graph))
 
@@ -835,7 +850,7 @@
      [t #:size 25]
      [tt #:size 25 #:face *mono-font*]
      [tit #:size 25 #:italic? #t]
-     [ti #:size 25
+     [ti #:size 27
          #:transform (λ (p) (t #:h-append hc-append #:left-pad 30 "• " p))]
      [cred #:size 10])
     (pslide
@@ -844,14 +859,14 @@
      #:go (coord 0.05 0.2 'lt)
      (vl-append
       (current-line-sep)
-      @ti{Processing small, in-memory datasets
-          already works very well}
-      @ti{Basic relational processing (joins) work}
-      @ti{Basic data science tasks can be completed,
-          including most of Hadley Wickham's book
-          @tit{R for Data Science}}
-      @ti{There's a whole other library for visualization
-          (and a Scheme workshop talk about it)})
+      @item[#:width 550]{Processing small, in-memory datasets
+                         already works very well}
+      @item[#:width 550]{Basic relational processing (joins) work}
+      @item[#:width 550]{Basic data science tasks can be completed,
+                         including most of Hadley Wickham's book
+                         R for Data Science}
+      @item[#:width 550]{There's a whole other library for visualization
+                         (and a Scheme workshop talk about it)})
      #:go (coord 0.95 0.95 'rb)
      (graph #:data delays-by-tailnum
             #:mapping (aes #:x "N" #:y "delay")
@@ -964,12 +979,15 @@
 ;;;; main
 (module+ main
   (title-slide)
+  (section-card "Wrangling data")
   (gss-pipeline-slides)
   (gss-example-slides)
   (sawzall-intro-slides)
   (basic-operators-slides)
+  (section-card "Tidying data")
   (billboard-example-slides)
   (tidying-operators-slides)
+  (section-card "Under the hood")
   (implementation-details-slides)
   (uses-directions-slides)
   (bunch-of-plots-slide)
