@@ -13,7 +13,7 @@
      eval))
 
 @title{Sawzall: A grammar for chopping up data}
-@author{@(author+email "Hazel Levine" "hazel@knightsofthelambdacalcul.us")}
+@author{@(author+email "Tulip Amalie" "tulip@bicompact.space")}
 
 @defmodule[sawzall]
 
