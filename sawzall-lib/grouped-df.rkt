@@ -40,7 +40,7 @@
 
 (define (in-data-frame/list/sub dfl . series)
   (match-define (sub-data-frame df (ivl beg end)) dfl)
-  (apply in-data-frame/list df #:start beg #:stop end series))
+  (apply in-data-frame/as-list df #:start beg #:stop end series))
 
 (define (df-ref/sub dfl idx series)
   (match-define (sub-data-frame df (ivl beg end)) dfl)

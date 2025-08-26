@@ -71,7 +71,7 @@
     #:->string (sawzall-show-formatter)
     (let ([series (if all? all-series (take all-series col-cap))])
       (cons series
-            (for/list ([v (apply in-data-frame/list df series)]
+            (for/list ([v (apply in-data-frame/as-list df series)]
                        [_ (if all? n-rows row-cap)])
               v)))))
 

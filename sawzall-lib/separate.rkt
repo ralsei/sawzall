@@ -122,7 +122,7 @@
                #:remove? [remove? #t])
   (define new-series
     (make-series column-name
-                 #:data (for/vector ([data (apply in-data-frame/list df to-combine)])
+                 #:data (for/vector ([data (apply in-data-frame/as-list df to-combine)])
                           (apply combine-fn data))))
 
   (define return-df (df-shallow-copy df))
